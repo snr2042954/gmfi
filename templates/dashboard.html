@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>gmfi</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+<main class="container">
+
+    <header class="header">
+        <div>
+            <h1>gmfi</h1>
+            <p class="muted">{{ today }}</p>
+        </div>
+
+        <div class="level-box">
+            <span class="level-label">LEVEL</span>
+            <strong>{{ level }}</strong>
+        </div>
+    </header>
+
+
+    <section class="card character-card">
+
+        <div class="stat-row">
+            <span>Total XP</span>
+            <strong>{{ total_xp }}</strong>
+        </div>
+
+        <div class="stat-row">
+            <span>Today</span>
+            <strong>+{{ today_xp }} XP</strong>
+        </div>
+
+        <div class="xp-bar">
+            <div
+                class="xp-fill"
+                style="width: {{ xp_in_level }}%;"
+            ></div>
+        </div>
+
+        <div class="xp-caption">
+            {{ xp_in_level }} / 100 XP
+        </div>
+
+    </section>
+
+
+    <section>
+
+        <div class="section-heading">
+            <h2>Daily quests</h2>
+        </div>
+
+        <div class="activity-grid">
+
+            {% for activity in daily_activities %}
+
+            <form
+                method="post"
+                action="{{ url_for('toggle_activity', activity_id=activity.id) }}"
+            >
+
+                <button
+                    class="activity-card {% if activity.completed %}completed{% endif %}"
+                    type="submit"
+                >
+
+                    <div>
+                        <div class="activity-name">
+                            {{ activity.name }}
+                        </div>
+
+                        <div class="activity-xp">
+                            +{{ activity.xp }} XP
+                        </div>
+                    </div>
+
+                    <div class="check">
+                        {% if activity.completed %}
+                            ✓
+                        {% else %}
+                            +
+                        {% endif %}
+                    </div>
+
+                </button>
+
+            </form>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <section>
+
+        <div class="section-heading">
+            <h2>Workout</h2>
+        </div>
+
+        <div class="activity-grid workout-grid">
+
+            {% for activity in workout_activities %}
+
+            <form
+                method="post"
+                action="{{ url_for('toggle_activity', activity_id=activity.id) }}"
+            >
+
+                <button
+                    class="activity-card workout-card {% if activity.completed %}completed{% endif %}"
+                    type="submit"
+                >
+
+                    <div>
+                        <div class="activity-name">
+                            {{ activity.name }}
+                        </div>
+
+                        <div class="activity-xp">
+                            +{{ activity.xp }} XP
+                        </div>
+                    </div>
+
+                    <div class="check">
+                        {% if activity.completed %}
+                            ✓
+                        {% else %}
+                            +
+                        {% endif %}
+                    </div>
+
+                </button>
+
+            </form>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+</main>
+
+</body>
+</html>
