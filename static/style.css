@@ -650,29 +650,6 @@ h2 {
 }
 
 
-.week-completed {
-    color: var(--accent);
-
-    font-weight: 700;
-}
-
-
-.week-completed small {
-    display: block;
-
-    margin-top: 2px;
-
-    color: var(--muted);
-
-    font-size: 9px;
-}
-
-
-.week-empty {
-    color: #3f3f46;
-}
-
-
 /* MOBILE */
 
 @media (max-width: 800px) {
@@ -773,6 +750,64 @@ h2 {
         flex: 1;
         text-align: center;
     }
+}
+
+/* WEEK SELECTOR */
+
+.week-selector {
+    display: flex;
+
+    align-items: end;
+
+    gap: 8px;
+
+    margin-bottom: 18px;
+}
+
+.week-selector label {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    color: var(--muted);
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.week-selector select {
+    min-width: 85px;
+
+    padding: 7px 9px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: var(--panel);
+
+    color: var(--text);
+}
+
+.week-selector button {
+    padding: 8px 14px;
+
+    border: 1px solid var(--accent);
+    border-radius: 7px;
+
+    background: var(--accent-dark);
+
+    color: var(--accent);
+
+    cursor: pointer;
+}
+
+.week-selector button:hover {
+    background: var(--accent);
+    color: var(--background);
 }
 
 /* EDITABLE WEEK */
@@ -1011,30 +1046,56 @@ h2 {
 
 }
 
+/* TROPHY ROOM */
+
 .trophy-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
     gap: 12px;
 }
 
 .trophy-card {
-    display: flex;
+    width: 100%;
 
-    align-items: center;
-
-    gap: 18px;
-
-    min-height: 130px;
-
-    padding: 20px;
+    padding: 0;
 
     border: 1px solid var(--border);
     border-radius: 14px;
 
     background: var(--panel);
+
+    color: var(--text);
+
+    cursor: pointer;
+
+    text-align: left;
+
+    overflow: hidden;
+
+    transition:
+        border-color 120ms ease,
+        opacity 120ms ease;
+}
+
+.trophy-card:hover {
+    border-color: #44444a;
+}
+
+.trophy-card.locked {
+    opacity: 0.45;
+}
+
+.trophy-card.locked:hover {
+    opacity: 0.7;
+}
+
+.trophy-summary {
+    display: flex;
+
+    gap: 18px;
+
+    align-items: center;
+
+    padding: 20px;
 }
 
 .trophy-icon {
@@ -1054,20 +1115,191 @@ h2 {
 
     color: var(--accent);
 
-    font-size: 28px;
+    font-size: 26px;
 }
 
-.trophy-card h2 {
-    margin-top: 4px;
+.locked .trophy-icon {
+    border-color: var(--border);
+
+    background: var(--background);
+
+    color: var(--muted);
 }
 
-.trophy-card p {
-    margin-bottom: 0;
+.trophy-info {
+    width: 100%;
 }
+
+.trophy-heading {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+}
+
+.trophy-heading h2 {
+    margin: 0;
+}
+
+.trophy-heading p {
+    margin:
+        5px
+        0
+        0;
+}
+
+.trophy-status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    flex-shrink: 0;
+}
+
+.unlocked-label,
+.locked-label {
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 1px;
+}
+
+.unlocked-label {
+    color: var(--accent);
+}
+
+.locked-label {
+    color: var(--muted);
+}
+
+
+/* EXPANDED AREA */
+
+.trophy-details {
+    display: none;
+
+    padding:
+        0
+        20px
+        20px
+        98px;
+
+    border-top: 1px solid transparent;
+}
+
+.trophy-card.open .trophy-details {
+    display: block;
+
+    padding-top: 18px;
+
+    border-top-color: var(--border);
+}
+
+.trophy-requirements ul {
+    margin:
+        10px
+        0
+        0;
+
+    padding-left: 18px;
+
+    color: var(--muted);
+
+    font-size: 13px;
+}
+
+.trophy-requirements li {
+    margin-bottom: 5px;
+}
+
+
+/* EARNED WEEKS */
+
+.trophy-history {
+    margin-top: 22px;
+}
+
+.trophy-week-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 8px;
+
+    margin-top: 10px;
+}
+
+.trophy-week-list a {
+    display: flex;
+
+    flex-direction: column;
+
+    padding: 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: var(--background);
+
+    color: var(--text);
+
+    text-decoration: none;
+}
+
+.trophy-week-list a:hover {
+    border-color: var(--accent);
+}
+
+.trophy-week-list span,
+.trophy-week-list small {
+    color: var(--muted);
+}
+
+.trophy-week-list span {
+    margin-top: 2px;
+
+    font-size: 11px;
+}
+
+.trophy-week-list small {
+    margin-top: 5px;
+
+    font-size: 9px;
+}
+
+.trophy-never-earned {
+    margin-top: 20px;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+/* MOBILE */
 
 @media (max-width: 700px) {
 
-    .trophy-grid {
+    .trophy-summary {
+        align-items: flex-start;
+    }
+
+    .trophy-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .trophy-details {
+        padding-left: 20px;
+    }
+
+    .trophy-week-list {
         grid-template-columns: 1fr;
     }
 

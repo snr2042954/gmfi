@@ -1,0 +1,113 @@
+achievements:
+
+  - id: perfect_week
+    name: Perfect Week
+    description: A flawless week across your routine and training.
+    icon: "♛"
+
+    requirement_text:
+      - Complete every normal daily quest on all 7 days.
+      - Complete at least one workout on all 7 days.
+
+    requirements:
+      required_quests_every_day:
+        - vitamins
+        - eggs
+        - kwark
+        - reading
+        - hobby
+
+      minimum_workout_days: 7
+
+
+  - id: routine_master
+    name: Routine Master
+    description: Complete your entire non-workout routine every day for a full week.
+    icon: "◆"
+
+    requirement_text:
+      - Complete every normal daily quest on all 7 days.
+
+    requirements:
+      required_quests_every_day:
+        - vitamins
+        - eggs
+        - kwark
+        - reading
+        - hobby
+
+
+  - id: iron_week
+    name: Iron Week
+    description: Hit every part of your gym split during the week.
+    icon: "⚒"
+
+    requirement_text:
+      - Complete Push at least once.
+      - Complete Pull at least once.
+      - Complete Legs at least once.
+
+    requirements:
+      minimum_days_per_quest:
+        gym_push: 1
+        gym_pull: 1
+        gym_legs: 1
+
+
+  - id: training_week
+    name: Training Week
+    description: Maintain a high training frequency throughout the week.
+    icon: "▲"
+
+    requirement_text:
+      - Complete at least one workout on 5 different days.
+
+    requirements:
+      minimum_workout_days: 5
+
+
+  - id: cardio_week
+    name: Cardio Week
+    description: Keep your cardiovascular training active throughout the week.
+    icon: "➤"
+
+    requirement_text:
+      - Jog or cycle on at least 3 different days.
+
+    requirements:
+      minimum_days_with_any_quest:
+        quest_ids:
+          - jogging
+          - cycling
+
+        days: 3
+
+
+  - id: bookworm
+    name: Bookworm
+    description: Read consistently for an entire week.
+    icon: "▤"
+
+    requirement_text:
+      - Complete Read 10 pages on all 7 days.
+
+    requirements:
+      minimum_days_per_quest:
+        reading: 7
+
+
+  - id: nutrition_lockin
+    name: Nutrition Lock-In
+    description: Stay locked into the core nutrition routine for the whole week.
+    icon: "●"
+
+    requirement_text:
+      - Take your vitamins every day.
+      - Eat 4 eggs every day.
+      - Eat kwark every day.
+
+    requirements:
+      required_quests_every_day:
+        - vitamins
+        - eggs
+        - kwark

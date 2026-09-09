@@ -32,6 +32,7 @@ def get_achievement_by_id(
     achievement_id,
 ):
     for achievement in load_achievements():
+
         if (
             achievement["id"]
             == achievement_id
@@ -57,7 +58,7 @@ def get_week_dates(
     ]
 
 
-def perfect_week_completed(
+def get_week_logs(
     iso_year,
     iso_week,
 ):
@@ -65,25 +66,6 @@ def perfect_week_completed(
         iso_year,
         iso_week,
     )
-
-    quests = load_quests()
-
-    daily_quests = [
-        quest
-        for quest in quests
-        if quest["category"] != "workout"
-    ]
-
-    workout_ids = {
-        quest["id"]
-        for quest in quests
-        if quest["category"] == "workout"
-    }
-
-    daily_ids = {
-        quest["id"]
-        for quest in daily_quests
-    }
 
     week_start = (
         week_dates[0].isoformat()
@@ -96,9 +78,7 @@ def perfect_week_completed(
     with get_db() as db:
         logs = db.execute(
             """
-            SELECT
-                quest_id,
-                completed_date
+            SELECT *
             FROM quest_logs
             WHERE completed_date
             BETWEEN ? AND ?
@@ -109,34 +89,181 @@ def perfect_week_completed(
             ),
         ).fetchall()
 
-    logs_by_date = {}
+    return (
+        week_dates,
+        logs,
+    )
+
+
+def build_logs_by_date(logs):
+    result = {}
 
     for log in logs:
-        logs_by_date.setdefault(
-            log["completed_date"],
+        completed_date = (
+            log["completed_date"]
+        )
+
+        result.setdefault(
+            completed_date,
             set(),
-        ).add(
+        )
+
+        result[
+            completed_date
+        ].add(
             log["quest_id"]
         )
 
-    for day in week_dates:
-        completed = logs_by_date.get(
-            day.isoformat(),
-            set(),
+    return result
+
+
+def achievement_completed(
+    achievement,
+    iso_year,
+    iso_week,
+):
+    week_dates, logs = get_week_logs(
+        iso_year,
+        iso_week,
+    )
+
+    logs_by_date = build_logs_by_date(
+        logs
+    )
+
+    requirements = achievement.get(
+        "requirements",
+        {},
+    )
+
+    quests = load_quests()
+
+    workout_ids = {
+        quest["id"]
+        for quest in quests
+        if quest["category"] == "workout"
+    }
+
+    # =========================
+    # REQUIRED QUESTS EVERY DAY
+    # =========================
+
+    required_every_day = (
+        requirements.get(
+            "required_quests_every_day"
+        )
+    )
+
+    if required_every_day:
+        required_ids = set(
+            required_every_day
         )
 
-        completed_daily = (
-            completed & daily_ids
-        )
+        for day in week_dates:
+            completed = logs_by_date.get(
+                day.isoformat(),
+                set(),
+            )
 
-        if completed_daily != daily_ids:
+            if not required_ids.issubset(
+                completed
+            ):
+                return False
+
+    # =========================
+    # MINIMUM WORKOUT DAYS
+    # =========================
+
+    minimum_workout_days = (
+        requirements.get(
+            "minimum_workout_days"
+        )
+    )
+
+    if minimum_workout_days is not None:
+        workout_days = 0
+
+        for day in week_dates:
+            completed = logs_by_date.get(
+                day.isoformat(),
+                set(),
+            )
+
+            if completed & workout_ids:
+                workout_days += 1
+
+        if (
+            workout_days
+            < minimum_workout_days
+        ):
             return False
 
-        completed_workouts = (
-            completed & workout_ids
+    # =========================
+    # MINIMUM DAYS PER QUEST
+    # =========================
+
+    minimum_days_per_quest = (
+        requirements.get(
+            "minimum_days_per_quest",
+            {},
+        )
+    )
+
+    for (
+        quest_id,
+        required_days,
+    ) in minimum_days_per_quest.items():
+
+        completed_days = sum(
+            1
+            for day in week_dates
+            if quest_id
+            in logs_by_date.get(
+                day.isoformat(),
+                set(),
+            )
         )
 
-        if len(completed_workouts) < 1:
+        if completed_days < required_days:
+            return False
+
+    # =========================
+    # ANY QUEST FROM SET
+    # =========================
+
+    any_quest_requirement = (
+        requirements.get(
+            "minimum_days_with_any_quest"
+        )
+    )
+
+    if any_quest_requirement:
+        quest_ids = set(
+            any_quest_requirement.get(
+                "quest_ids",
+                [],
+            )
+        )
+
+        required_days = (
+            any_quest_requirement.get(
+                "days",
+                0,
+            )
+        )
+
+        completed_days = 0
+
+        for day in week_dates:
+            completed = logs_by_date.get(
+                day.isoformat(),
+                set(),
+            )
+
+            if completed & quest_ids:
+                completed_days += 1
+
+        if completed_days < required_days:
             return False
 
     return True
@@ -148,29 +275,18 @@ def evaluate_weekly_achievements(
 ):
     earned = []
 
-    achievements = load_achievements()
+    for achievement in load_achievements():
 
-    for achievement in achievements:
+        if not achievement_completed(
+            achievement,
+            iso_year,
+            iso_week,
+        ):
+            continue
 
         achievement_id = (
             achievement["id"]
         )
-
-        qualifies = False
-
-        if (
-            achievement_id
-            == "perfect_week"
-        ):
-            qualifies = (
-                perfect_week_completed(
-                    iso_year,
-                    iso_week,
-                )
-            )
-
-        if not qualifies:
-            continue
 
         with get_db() as db:
             existing = db.execute(

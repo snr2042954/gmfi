@@ -29,55 +29,177 @@ Trophies · gmfi
     </div>
 
 
-    {% if trophies %}
+    <div class="trophy-grid">
 
-        <div class="trophy-grid">
+        {% for trophy in trophies %}
 
-            {% for trophy in trophies %}
+            <button
+                type="button"
+                class="
+                    trophy-card
+                    {% if not trophy.unlocked %}
+                        locked
+                    {% endif %}
+                "
+                onclick="toggleTrophy(this)"
+            >
 
-                <div class="trophy-card">
+                <div class="trophy-summary">
 
                     <div class="trophy-icon">
-                        ♛
+                        {{ trophy.icon }}
                     </div>
 
-                    <div>
 
-                        <div class="eyebrow">
-                            WEEK {{ trophy.week }}
-                            ·
-                            {{ trophy.year }}
+                    <div class="trophy-info">
+
+                        <div class="trophy-heading">
+
+                            <div>
+                                <h2>
+                                    {{ trophy.name }}
+                                </h2>
+
+                                <p class="muted">
+                                    {{ trophy.description }}
+                                </p>
+                            </div>
+
+
+                            <div class="trophy-status">
+
+                                {% if trophy.unlocked %}
+
+                                    <span class="unlocked-label">
+                                        UNLOCKED
+                                    </span>
+
+                                    <strong>
+                                        ×{{ trophy.count }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="locked-label">
+                                        LOCKED
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
                         </div>
-
-                        <h2>
-                            {{ trophy.name }}
-                        </h2>
-
-                        <p class="muted">
-                            {{ trophy.description }}
-                        </p>
 
                     </div>
 
                 </div>
 
-            {% endfor %}
 
-        </div>
+                <div class="trophy-details">
+
+                    <div class="trophy-requirements">
+
+                        <div class="eyebrow">
+                            REQUIREMENTS
+                        </div>
+
+                        <ul>
+
+                            {% for requirement in trophy.requirements %}
+
+                                <li>
+                                    {{ requirement }}
+                                </li>
+
+                            {% endfor %}
+
+                        </ul>
+
+                    </div>
 
 
-    {% else %}
+                    {% if trophy.unlocked %}
 
-        <div class="panel">
+                        <div class="trophy-history">
 
-            <div class="muted">
-                No trophies earned yet.
-            </div>
+                            <div class="eyebrow">
+                                COMPLETED WEEKS
+                            </div>
 
-        </div>
+                            <div class="trophy-week-list">
 
-    {% endif %}
+                                {% for week in trophy.weeks %}
+
+                                    <a
+                                        href="{{ url_for(
+                                            'week_page',
+                                            year=week.year,
+                                            week=week.week
+                                        ) }}"
+                                        onclick="event.stopPropagation();"
+                                    >
+
+                                        <strong>
+                                            Week {{ week.week }}
+                                        </strong>
+
+                                        <span>
+                                            {{ week.year }}
+                                        </span>
+
+                                        <small>
+                                            {{ week.start.strftime("%d %b") }}
+                                            –
+                                            {{ week.end.strftime("%d %b") }}
+                                        </small>
+
+                                    </a>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="trophy-never-earned">
+                            Not yet earned.
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </button>
+
+        {% endfor %}
+
+    </div>
 
 </section>
+
+
+<script>
+
+function toggleTrophy(card) {
+    const open =
+        !card.classList.contains("open");
+
+    document
+        .querySelectorAll(".trophy-card.open")
+        .forEach((other) => {
+            if (other !== card) {
+                other.classList.remove("open");
+            }
+        });
+
+    card.classList.toggle(
+        "open",
+        open
+    );
+}
+
+</script>
 
 {% endblock %}

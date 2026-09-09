@@ -11,7 +11,7 @@ from flask import (
 
 from app.achievements import (
     evaluate_weekly_achievements,
-    get_achievement_by_id,
+    load_achievements,
 )
 from app.db import get_db
 from app.progression import (
@@ -47,9 +47,16 @@ def get_week_dates(
     ]
 
 
+def get_weeks_in_year(year):
+    return date(
+        year,
+        12,
+        28,
+    ).isocalendar().week
+
+
 def get_today_context():
     today = today_local().isoformat()
-
     quests = load_quests()
 
     with get_db() as db:
@@ -119,7 +126,9 @@ def register_routes(app):
             completed_today=len(
                 today_logs
             ),
-            total_today=len(quests),
+            total_today=len(
+                quests
+            ),
         )
 
 
@@ -219,7 +228,6 @@ def register_routes(app):
     @app.route("/week")
     def week_page():
         current_date = today_local()
-
         current_iso = (
             current_date.isocalendar()
         )
@@ -232,12 +240,23 @@ def register_routes(app):
                 )
             )
 
+            max_weeks = get_weeks_in_year(
+                selected_year
+            )
+
             selected_week = int(
                 request.args.get(
                     "week",
                     current_iso.week,
                 )
             )
+
+            if not (
+                1
+                <= selected_week
+                <= max_weeks
+            ):
+                return "Invalid week", 400
 
             week_dates = get_week_dates(
                 selected_year,
@@ -330,8 +349,6 @@ def register_routes(app):
             for row in week_logs
         )
 
-        # Only evaluate weeks that have
-        # completely finished.
         if week_end < today:
             evaluate_weekly_achievements(
                 selected_year,
@@ -345,6 +362,7 @@ def register_routes(app):
 
         return render_template(
             "week.html",
+
             today=today,
             active_page="week",
 
@@ -352,9 +370,10 @@ def register_routes(app):
             selected_week=selected_week,
 
             available_years=available_years,
+
             available_weeks=range(
                 1,
-                54,
+                max_weeks + 1,
             ),
 
             week_dates=week_dates,
@@ -369,38 +388,88 @@ def register_routes(app):
             today_local().isoformat()
         )
 
+        achievements = (
+            load_achievements()
+        )
+
         with get_db() as db:
-            rows = db.execute(
+            earned_rows = db.execute(
                 """
                 SELECT *
                 FROM trophies
                 ORDER BY
                     iso_year DESC,
-                    iso_week DESC,
-                    earned_at DESC
+                    iso_week DESC
                 """
             ).fetchall()
 
-        trophies = []
+        earned_by_achievement = {}
 
-        for row in rows:
-            achievement = (
-                get_achievement_by_id(
-                    row[
-                        "achievement_id"
-                    ]
+        for row in earned_rows:
+            achievement_id = (
+                row["achievement_id"]
+            )
+
+            earned_by_achievement.setdefault(
+                achievement_id,
+                [],
+            )
+
+            week_start = (
+                date.fromisocalendar(
+                    row["iso_year"],
+                    row["iso_week"],
+                    1,
                 )
             )
 
-            if achievement is None:
-                continue
+            week_end = (
+                date.fromisocalendar(
+                    row["iso_year"],
+                    row["iso_week"],
+                    7,
+                )
+            )
+
+            earned_by_achievement[
+                achievement_id
+            ].append(
+                {
+                    "year": (
+                        row["iso_year"]
+                    ),
+                    "week": (
+                        row["iso_week"]
+                    ),
+                    "start": (
+                        week_start
+                    ),
+                    "end": (
+                        week_end
+                    ),
+                    "earned_at": (
+                        row["earned_at"]
+                    ),
+                }
+            )
+
+        trophies = []
+
+        for achievement in achievements:
+            weeks = (
+                earned_by_achievement.get(
+                    achievement["id"],
+                    [],
+                )
+            )
 
             trophies.append(
                 {
+                    "id": (
+                        achievement["id"]
+                    ),
                     "name": (
-                        achievement[
-                            "name"
-                        ]
+                        achievement["name"]
                     ),
                     "description": (
                         achievement[
@@ -410,18 +479,22 @@ def register_routes(app):
                     "icon": (
                         achievement.get(
                             "icon",
-                            "trophy",
+                            "★",
                         )
                     ),
-                    "year": (
-                        row["iso_year"]
+                    "requirements": (
+                        achievement.get(
+                            "requirement_text",
+                            [],
+                        )
                     ),
-                    "week": (
-                        row["iso_week"]
+                    "unlocked": (
+                        len(weeks) > 0
                     ),
-                    "earned_at": (
-                        row["earned_at"]
+                    "count": (
+                        len(weeks)
                     ),
+                    "weeks": weeks,
                 }
             )
 
@@ -585,6 +658,24 @@ def register_routes(app):
                         ),
                     ),
                 )
+
+        # If you edited a completed historical
+        # week, immediately check its trophies.
+        iso = selected_date.isocalendar()
+
+        week_sunday = (
+            date.fromisocalendar(
+                iso.year,
+                iso.week,
+                7,
+            )
+        )
+
+        if week_sunday < today_local():
+            evaluate_weekly_achievements(
+                iso.year,
+                iso.week,
+            )
 
         return redirect(
             request.referrer
