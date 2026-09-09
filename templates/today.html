@@ -6,22 +6,31 @@ Today · gmfi
 
 {% block content %}
 
+
+<!-- ========================= -->
+<!-- DAILY -->
+<!-- ========================= -->
+
 <section>
 
     <div class="section-title">
+
         <div>
+
             <div class="eyebrow">
-                QUEST LOG
+                DAILY QUESTS
             </div>
 
             <h1>
                 Today
             </h1>
+
         </div>
 
         <strong>
             +{{ today_xp }} XP
         </strong>
+
     </div>
 
 
@@ -29,50 +38,142 @@ Today · gmfi
 
         {% for quest in daily_quests %}
 
-            <form
-                method="post"
-                action="{{ url_for('toggle_quest', quest_id=quest.id) }}"
-            >
-
-                <button
-                    class="quest {% if quest.completed %}completed{% endif %}"
-                    type="submit"
-                >
-
-                    <div class="quest-main">
-
-                        <div class="quest-check">
-                            {% if quest.completed %}
-                                ✓
-                            {% else %}
-                                +
-                            {% endif %}
-                        </div>
-
-                        <div>
-                            <strong>
-                                {{ quest.name }}
-                            </strong>
-
-                            <small>
-                                {{ quest.description }}
-                            </small>
-                        </div>
-
-                    </div>
-
-                    <div class="quest-reward">
-                        +{{ quest.xp.base }} XP
-                    </div>
-
-                </button>
-
-            </form>
+            {% include "partials/quest_card.html" %}
 
         {% endfor %}
 
     </div>
 
 </section>
+
+
+
+<!-- ========================= -->
+<!-- NUTRITION -->
+<!-- ========================= -->
+
+<section>
+
+    <div class="section-title">
+
+        <div>
+
+            <div class="eyebrow">
+                VITALITY
+            </div>
+
+            <h2>
+                Nutrition
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="quest-list">
+
+        {% for quest in nutrition_quests %}
+
+            {% include "partials/quest_card.html" %}
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+
+<!-- ========================= -->
+<!-- TRAINING -->
+<!-- ========================= -->
+
+<section>
+
+    <div class="section-title">
+
+        <div>
+
+            <div class="eyebrow">
+                TRAINING
+            </div>
+
+            <h2>
+                Workout
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="quest-list">
+
+        {% for quest in workout_quests %}
+
+            {% include "partials/quest_card.html" %}
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+
+<script>
+
+function expandQuest(button) {
+    const card = button.closest(".quest-card");
+
+    document
+        .querySelectorAll(".quest-card.expanded")
+        .forEach((otherCard) => {
+            if (otherCard !== card) {
+                otherCard.classList.remove("expanded");
+            }
+        });
+
+    card.classList.add("expanded");
+
+    const input = card.querySelector(
+        'input[name="measurement_value"]'
+    );
+
+    if (input) {
+        setTimeout(() => {
+            input.focus();
+        }, 50);
+    }
+}
+
+
+function collapseQuest(button) {
+    const card = button.closest(".quest-card");
+
+    card.classList.remove("expanded");
+}
+
+
+document.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            !event.target.closest(".quest-card")
+        ) {
+
+            document
+                .querySelectorAll(".quest-card.expanded")
+                .forEach((card) => {
+                    card.classList.remove("expanded");
+                });
+        }
+    }
+);
+
+</script>
+
 
 {% endblock %}

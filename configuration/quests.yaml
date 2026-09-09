@@ -1,13 +1,14 @@
 quests:
 
   # =========================
-  # HEALTH
+  # DAILY
   # =========================
 
   - id: vitamins
     name: Take vitamins
-    category: health
+    category: daily
     description: Take daily vitamins
+    active: true
 
     xp:
       base: 5
@@ -15,6 +16,72 @@ quests:
       skills:
         vitality:
           base: 2
+
+        discipline:
+          base: 1
+
+
+  - id: reading
+    name: Reading
+    category: daily
+    description: Read a book
+    active: true
+
+    measurement:
+      type: pages
+      label: Pages
+      unit: pages
+      min: 1
+      step: 1
+
+    xp:
+      base: 5
+
+      scaling:
+        per_unit: 1
+        max_units: 50
+
+      skills:
+        intelligence:
+          base: 1
+          per_unit: 0.2
+
+        discipline:
+          base: 1
+
+
+  - id: hobby
+    name: Hobby for 1 hour
+    category: daily
+    description: Spend at least one hour on a hobby
+    active: true
+
+    xp:
+      base: 20
+
+      skills:
+        creativity:
+          base: 3
+
+        discipline:
+          base: 1
+
+
+  - id: walk
+    name: Go for a walk
+    category: daily
+    description: Go outside for a dedicated walk
+    active: true
+
+    xp:
+      base: 10
+
+      skills:
+        vitality:
+          base: 1
+
+        endurance:
+          base: 1
 
         discipline:
           base: 1
@@ -28,6 +95,7 @@ quests:
     name: Eat 4 eggs
     category: nutrition
     description: Eat at least four eggs
+    active: true
 
     xp:
       base: 5
@@ -44,6 +112,41 @@ quests:
     name: Eat kwark
     category: nutrition
     description: Eat daily portion of kwark
+    active: true
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  - id: fruit
+    name: Eat fruit
+    category: nutrition
+    description: Eat your daily fruit
+    active: true
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  - id: vegetables
+    name: Eat vegetables
+    category: nutrition
+    description: Eat a proper serving of vegetables
+    active: true
 
     xp:
       base: 5
@@ -57,46 +160,6 @@ quests:
 
 
   # =========================
-  # LEARNING
-  # =========================
-
-  - id: reading
-    name: Read 10 pages
-    category: learning
-    description: Read at least ten pages of a book
-
-    xp:
-      base: 15
-
-      skills:
-        intelligence:
-          base: 3
-
-        discipline:
-          base: 1
-
-
-  # =========================
-  # HOBBY
-  # =========================
-
-  - id: hobby
-    name: Hobby for 1 hour
-    category: hobby
-    description: Spend at least one hour on a hobby
-
-    xp:
-      base: 20
-
-      skills:
-        creativity:
-          base: 3
-
-        discipline:
-          base: 1
-
-
-  # =========================
   # GYM
   # =========================
 
@@ -104,6 +167,7 @@ quests:
     name: Push
     category: workout
     description: Complete a push workout
+    active: true
 
     measurement:
       type: sets
@@ -136,6 +200,7 @@ quests:
     name: Pull
     category: workout
     description: Complete a pull workout
+    active: true
 
     measurement:
       type: sets
@@ -168,6 +233,7 @@ quests:
     name: Legs
     category: workout
     description: Complete a leg workout
+    active: true
 
     measurement:
       type: sets
@@ -208,6 +274,7 @@ quests:
     name: Jogging
     category: workout
     description: Complete a run
+    active: true
 
     measurement:
       type: distance
@@ -240,6 +307,7 @@ quests:
     name: Cycling
     category: workout
     description: Complete a cycling session
+    active: true
 
     measurement:
       type: distance
@@ -266,3 +334,38 @@ quests:
 
         discipline:
           base: 1
+
+
+  # Example for later:
+  #
+  # - id: skating
+  #   name: Skating
+  #   category: workout
+  #   description: Complete a skating session
+  #   active: false
+  #
+  #   measurement:
+  #     type: distance
+  #     label: Distance
+  #     unit: km
+  #     min: 0.1
+  #     step: 0.1
+  #
+  #   xp:
+  #     base: 10
+  #
+  #     scaling:
+  #       per_unit: 2
+  #       max_units: 50
+  #
+  #     skills:
+  #       endurance:
+  #         base: 2
+  #         per_unit: 0.3
+  #
+  #       vitality:
+  #         base: 1
+  #         per_unit: 0.1
+  #
+  #       discipline:
+  #         base: 1

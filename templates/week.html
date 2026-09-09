@@ -9,23 +9,31 @@ Week · gmfi
 <section>
 
     <div class="section-title">
+
         <div>
+
             <div class="eyebrow">
                 HISTORY
             </div>
 
             <h1>
-                This week
+                Week {{ selected_week }}
             </h1>
 
             <div class="muted">
-                Click a day to correct missed tracking.
+                {{ week_start_label }}
+                –
+                {{ week_end_label }}
+                ·
+                {{ selected_year }}
             </div>
+
         </div>
 
         <strong>
             +{{ week_xp }} XP
         </strong>
+
     </div>
 
 
@@ -39,14 +47,18 @@ Week · gmfi
             Year
 
             <select name="year">
+
                 {% for year in available_years %}
+
                     <option
                         value="{{ year }}"
                         {% if year == selected_year %}selected{% endif %}
                     >
                         {{ year }}
                     </option>
+
                 {% endfor %}
+
             </select>
         </label>
 
@@ -55,14 +67,18 @@ Week · gmfi
             Week
 
             <select name="week">
+
                 {% for week in available_weeks %}
+
                     <option
                         value="{{ week }}"
                         {% if week == selected_week %}selected{% endif %}
                     >
                         {{ week }}
                     </option>
+
                 {% endfor %}
+
             </select>
         </label>
 
@@ -79,6 +95,7 @@ Week · gmfi
         <table class="week-table">
 
             <thead>
+
                 <tr>
 
                     <th>
@@ -100,12 +117,40 @@ Week · gmfi
                     {% endfor %}
 
                 </tr>
+
             </thead>
 
 
             <tbody>
 
+                {% set ns = namespace(last_category=None) %}
+
                 {% for row in week_rows %}
+
+                    {% if row.quest.category != ns.last_category %}
+
+                        <tr class="week-group-row">
+
+                            <td colspan="8">
+
+                                {% if row.quest.category == "daily" %}
+                                    Daily
+                                {% elif row.quest.category == "nutrition" %}
+                                    Nutrition
+                                {% elif row.quest.category == "workout" %}
+                                    Workout
+                                {% else %}
+                                    {{ row.quest.category | title }}
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% set ns.last_category = row.quest.category %}
+
+                    {% endif %}
+
 
                     <tr>
 
@@ -146,6 +191,7 @@ Week · gmfi
                                                 </small>
 
                                             {% endif %}
+
                                         </button>
 
 
@@ -200,7 +246,7 @@ Week · gmfi
 
                                         <div class="week-editor">
 
-                                            {% if row.quest.category == "workout" %}
+                                            {% if row.quest.measurement %}
 
                                                 <form
                                                     method="post"

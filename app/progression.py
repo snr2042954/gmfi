@@ -4,7 +4,12 @@ import yaml
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-PROGRESSION_PATH = BASE_DIR / "progression.yaml"
+
+CONFIG_DIR = BASE_DIR / "configuration"
+
+PROGRESSION_PATH = (
+    CONFIG_DIR / "progression.yaml"
+)
 
 
 def load_progression():

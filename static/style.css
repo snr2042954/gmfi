@@ -1304,3 +1304,338 @@ h2 {
     }
 
 }
+
+/* ========================= */
+/* QUEST CARDS */
+/* ========================= */
+
+.quest-list {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+}
+
+
+.quest-card {
+    overflow: hidden;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--panel);
+
+    transition:
+        border-color 120ms ease,
+        background 120ms ease;
+}
+
+
+.quest-card:hover {
+    border-color: #3a3a40;
+}
+
+
+.quest-card.completed {
+    border-color: #286736;
+
+    background: var(--accent-dark);
+}
+
+
+/* COMPACT ROW */
+
+.quest-compact {
+    min-height: 78px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 14px;
+
+    padding: 16px;
+}
+
+
+.quest-main {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    min-width: 0;
+}
+
+
+.quest-main form {
+    margin: 0;
+}
+
+
+.quest-check {
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+
+    flex-shrink: 0;
+
+    place-items: center;
+
+    padding: 0;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+
+    font-weight: 700;
+
+    transition:
+        border-color 120ms ease,
+        color 120ms ease,
+        background 120ms ease;
+}
+
+
+.quest-check:hover {
+    border-color: var(--accent);
+
+    color: var(--accent);
+}
+
+
+.quest-check.completed {
+    border-color: var(--accent);
+
+    color: var(--accent);
+}
+
+
+.quest-check.completed:hover {
+    background: var(--accent);
+
+    color: var(--background);
+}
+
+
+.quest-text {
+    min-width: 0;
+}
+
+
+.quest-text strong {
+    display: block;
+}
+
+
+.quest-text small {
+    display: block;
+
+    margin-top: 4px;
+
+    overflow: hidden;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+
+/* RIGHT SIDE */
+
+.quest-right {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-end;
+
+    gap: 3px;
+
+    flex-shrink: 0;
+}
+
+
+.quest-reward,
+.quest-earned {
+    color: var(--accent);
+
+    font-size: 12px;
+}
+
+
+.quest-measurement-result {
+    color: var(--text);
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+
+/* ========================= */
+/* EXPANDED MEASUREMENT */
+/* ========================= */
+
+.quest-expanded {
+    display: none;
+
+    padding:
+        0
+        16px
+        16px
+        60px;
+
+    border-top: 1px solid transparent;
+}
+
+
+.quest-card.expanded {
+    border-color: var(--accent);
+}
+
+
+.quest-card.expanded .quest-expanded {
+    display: block;
+
+    padding-top: 14px;
+
+    border-top-color: var(--border);
+}
+
+
+.quest-measurement-form {
+    display: flex;
+
+    align-items: flex-end;
+
+    gap: 10px;
+}
+
+
+.quest-measurement-form label {
+    flex: 1;
+
+    color: var(--muted);
+
+    font-size: 11px;
+}
+
+
+.quest-expanded .input-row {
+    margin-top: 6px;
+}
+
+
+.quest-expanded-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+}
+
+
+.quest-expanded .complete-button {
+    width: auto;
+
+    margin: 0;
+
+    padding:
+        10px
+        14px;
+}
+
+
+.quest-collapse-button {
+    padding:
+        9px
+        12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+}
+
+
+.quest-collapse-button:hover {
+    color: var(--text);
+}
+
+
+/* ========================= */
+/* MOBILE */
+/* ========================= */
+
+@media (max-width: 700px) {
+
+    .quest-list {
+        grid-template-columns: 1fr;
+    }
+
+
+    .quest-expanded {
+        padding-left: 16px;
+    }
+
+
+    .quest-measurement-form {
+        align-items: stretch;
+
+        flex-direction: column;
+    }
+
+
+    .quest-expanded-actions {
+        width: 100%;
+    }
+
+
+    .quest-expanded .complete-button {
+        flex: 1;
+    }
+
+}
+
+/* WEEK GROUPS */
+
+.week-group-row td {
+    padding:
+        10px
+        12px;
+
+    background: var(--background);
+
+    color: var(--muted);
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+
+    text-align: left !important;
+}
+
+.week-group-row:not(:first-child) td {
+    border-top: 1px solid var(--border);
+}

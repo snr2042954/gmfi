@@ -1,0 +1,189 @@
+<div
+    class="
+        quest-card
+        {% if quest.completed %}
+            completed
+        {% endif %}
+    "
+>
+
+    <div class="quest-compact">
+
+        <div class="quest-main">
+
+            {% if quest.completed %}
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'toggle_quest',
+                        quest_id=quest.id
+                    ) }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="quest-check completed"
+                        title="Undo completion"
+                    >
+                        ✓
+                    </button>
+
+                </form>
+
+
+            {% elif quest.measurement %}
+
+                <button
+                    type="button"
+                    class="quest-check"
+                    onclick="expandQuest(this)"
+                    title="Log quest"
+                >
+                    +
+                </button>
+
+
+            {% else %}
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'toggle_quest',
+                        quest_id=quest.id
+                    ) }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="quest-check"
+                        title="Complete quest"
+                    >
+                        +
+                    </button>
+
+                </form>
+
+            {% endif %}
+
+
+            <div class="quest-text">
+
+                <strong>
+                    {{ quest.name }}
+                </strong>
+
+                <small>
+                    {{ quest.description }}
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="quest-right">
+
+            {% if quest.completed %}
+
+                {% if
+                    quest.log.measurement_value
+                    is not none
+                %}
+
+                    <span class="quest-measurement-result">
+
+                        {{ quest.log.measurement_value }}
+
+                        {{ quest.measurement.unit }}
+
+                    </span>
+
+                {% endif %}
+
+                <span class="quest-earned">
+                    +{{ quest.log.xp_earned }} XP
+                </span>
+
+
+            {% else %}
+
+                <span class="quest-reward">
+                    +{{ quest.xp.base }} XP
+                </span>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+
+    {% if
+        quest.measurement
+        and not quest.completed
+    %}
+
+        <div class="quest-expanded">
+
+            <form
+                method="post"
+                action="{{ url_for(
+                    'toggle_quest',
+                    quest_id=quest.id
+                ) }}"
+                class="quest-measurement-form"
+            >
+
+                <label>
+
+                    {{ quest.measurement.label }}
+
+                    <div class="input-row">
+
+                        <input
+                            type="number"
+                            name="measurement_value"
+
+                            min="{{ quest.measurement.min }}"
+                            step="{{ quest.measurement.step }}"
+
+                            required
+                        >
+
+                        <span>
+                            {{ quest.measurement.unit }}
+                        </span>
+
+                    </div>
+
+                </label>
+
+
+                <div class="quest-expanded-actions">
+
+                    <button
+                        type="submit"
+                        class="complete-button"
+                    >
+                        Complete
+                    </button>
+
+                    <button
+                        type="button"
+                        class="quest-collapse-button"
+                        onclick="collapseQuest(this)"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    {% endif %}
+
+</div>

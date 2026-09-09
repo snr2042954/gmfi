@@ -10,8 +10,10 @@ from app.timeutils import now_local
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+CONFIG_DIR = BASE_DIR / "configuration"
+
 ACHIEVEMENTS_PATH = (
-    BASE_DIR / "achievements.yaml"
+    CONFIG_DIR / "achievements.yaml"
 )
 
 

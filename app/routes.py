@@ -21,6 +21,7 @@ from app.progression import (
     get_skill_progress,
 )
 from app.quests import (
+    get_active_quests,
     get_quest_by_id,
     load_quests,
 )
@@ -57,7 +58,8 @@ def get_weeks_in_year(year):
 
 def get_today_context():
     today = today_local().isoformat()
-    quests = load_quests()
+
+    quests = get_active_quests()
 
     with get_db() as db:
         today_logs = db.execute(
@@ -98,6 +100,10 @@ def get_today_context():
 
 def register_routes(app):
 
+    # =========================
+    # TODAY
+    # =========================
+
     @app.route("/")
     def today_page():
         (
@@ -109,7 +115,30 @@ def register_routes(app):
         daily_quests = [
             quest
             for quest in quests
-            if quest["category"] != "workout"
+            if quest["category"] == "daily"
+        ]
+
+        nutrition_quests = [
+            quest
+            for quest in quests
+            if quest["category"] == "nutrition"
+        ]
+
+        workout_quests = [
+            quest
+            for quest in quests
+            if quest["category"] == "workout"
+        ]
+
+        active_ids = {
+            quest["id"]
+            for quest in quests
+        }
+
+        active_today_logs = [
+            row
+            for row in today_logs
+            if row["quest_id"] in active_ids
         ]
 
         today_xp = sum(
@@ -119,12 +148,18 @@ def register_routes(app):
 
         return render_template(
             "today.html",
+
             today=today,
             active_page="today",
+
             daily_quests=daily_quests,
+            nutrition_quests=nutrition_quests,
+            workout_quests=workout_quests,
+
             today_xp=today_xp,
+
             completed_today=len(
-                today_logs
+                active_today_logs
             ),
             total_today=len(
                 quests
@@ -132,27 +167,9 @@ def register_routes(app):
         )
 
 
-    @app.route("/workouts")
-    def workouts_page():
-        (
-            today,
-            quests,
-            _,
-        ) = get_today_context()
-
-        workout_quests = [
-            quest
-            for quest in quests
-            if quest["category"] == "workout"
-        ]
-
-        return render_template(
-            "workouts.html",
-            today=today,
-            active_page="workouts",
-            workout_quests=workout_quests,
-        )
-
+    # =========================
+    # CHARACTER
+    # =========================
 
     @app.route("/character")
     def character_page():
@@ -169,6 +186,8 @@ def register_routes(app):
                 """
             ).fetchall()
 
+        # Stored XP remains valid regardless
+        # of whether its quest is active now.
         total_xp = sum(
             row["xp_earned"]
             for row in all_logs
@@ -216,18 +235,26 @@ def register_routes(app):
 
         return render_template(
             "character.html",
+
             today=today,
             active_page="character",
+
             total_xp=total_xp,
+
             character=character,
             skills=skills,
             rank=rank,
         )
 
 
+    # =========================
+    # WEEK
+    # =========================
+
     @app.route("/week")
     def week_page():
         current_date = today_local()
+
         current_iso = (
             current_date.isocalendar()
         )
@@ -240,8 +267,10 @@ def register_routes(app):
                 )
             )
 
-            max_weeks = get_weeks_in_year(
-                selected_year
+            max_weeks = (
+                get_weeks_in_year(
+                    selected_year
+                )
             )
 
             selected_week = int(
@@ -256,7 +285,10 @@ def register_routes(app):
                 <= selected_week
                 <= max_weeks
             ):
-                return "Invalid week", 400
+                return (
+                    "Invalid week",
+                    400,
+                )
 
             week_dates = get_week_dates(
                 selected_year,
@@ -267,7 +299,10 @@ def register_routes(app):
             ValueError,
             TypeError,
         ):
-            return "Invalid week", 400
+            return (
+                "Invalid week",
+                400,
+            )
 
         today = (
             current_date.isoformat()
@@ -281,7 +316,18 @@ def register_routes(app):
             week_dates[-1].isoformat()
         )
 
-        quests = load_quests()
+        week_start_label = (
+            f"{week_dates[0].strftime('%B')} "
+            f"{week_dates[0].day}"
+        )
+
+        week_end_label = (
+            f"{week_dates[-1].strftime('%B')} "
+            f"{week_dates[-1].day}"
+        )
+
+        # Only active quests are shown.
+        quests = get_active_quests()
 
         with get_db() as db:
             week_logs = db.execute(
@@ -326,9 +372,11 @@ def register_routes(app):
                 days.append(
                     {
                         "date": day_string,
+
                         "completed": (
                             log is not None
                         ),
+
                         "log": (
                             dict(log)
                             if log
@@ -344,6 +392,8 @@ def register_routes(app):
                 }
             )
 
+        # Includes old/inactive quest XP,
+        # because historical XP is historical XP.
         week_xp = sum(
             row["xp_earned"]
             for row in week_logs
@@ -376,11 +426,18 @@ def register_routes(app):
                 max_weeks + 1,
             ),
 
+            week_start_label=week_start_label,
+            week_end_label=week_end_label,
+
             week_dates=week_dates,
             week_rows=week_rows,
             week_xp=week_xp,
         )
 
+
+    # =========================
+    # TROPHIES
+    # =========================
 
     @app.route("/trophies")
     def trophies_page():
@@ -415,20 +472,16 @@ def register_routes(app):
                 [],
             )
 
-            week_start = (
-                date.fromisocalendar(
-                    row["iso_year"],
-                    row["iso_week"],
-                    1,
-                )
+            week_start = date.fromisocalendar(
+                row["iso_year"],
+                row["iso_week"],
+                1,
             )
 
-            week_end = (
-                date.fromisocalendar(
-                    row["iso_year"],
-                    row["iso_week"],
-                    7,
-                )
+            week_end = date.fromisocalendar(
+                row["iso_year"],
+                row["iso_week"],
+                7,
             )
 
             earned_by_achievement[
@@ -438,15 +491,19 @@ def register_routes(app):
                     "year": (
                         row["iso_year"]
                     ),
+
                     "week": (
                         row["iso_week"]
                     ),
+
                     "start": (
                         week_start
                     ),
+
                     "end": (
                         week_end
                     ),
+
                     "earned_at": (
                         row["earned_at"]
                     ),
@@ -468,43 +525,56 @@ def register_routes(app):
                     "id": (
                         achievement["id"]
                     ),
+
                     "name": (
                         achievement["name"]
                     ),
+
                     "description": (
                         achievement[
                             "description"
                         ]
                     ),
+
                     "icon": (
                         achievement.get(
                             "icon",
                             "★",
                         )
                     ),
+
                     "requirements": (
                         achievement.get(
                             "requirement_text",
                             [],
                         )
                     ),
+
                     "unlocked": (
                         len(weeks) > 0
                     ),
+
                     "count": (
                         len(weeks)
                     ),
+
                     "weeks": weeks,
                 }
             )
 
         return render_template(
             "trophies.html",
+
             today=today,
             active_page="trophies",
+
             trophies=trophies,
         )
 
+
+    # =========================
+    # QUEST TOGGLE
+    # =========================
 
     @app.post(
         "/quest/<quest_id>/toggle"
@@ -518,6 +588,17 @@ def register_routes(app):
             return (
                 "Quest not found",
                 404,
+            )
+
+        # Prevent inactive quests from being
+        # manually logged via crafted requests.
+        if not quest.get(
+            "active",
+            True,
+        ):
+            return (
+                "Quest is inactive",
+                400,
             )
 
         completed_date = (
@@ -534,6 +615,7 @@ def register_routes(app):
                     "%Y-%m-%d",
                 ).date()
             )
+
         except ValueError:
             return (
                 "Invalid date",
@@ -591,6 +673,7 @@ def register_routes(app):
                 )
 
                 if measurement:
+
                     if (
                         measurement_value
                         is None
@@ -604,6 +687,7 @@ def register_routes(app):
                         measurement_value = float(
                             measurement_value
                         )
+
                     except ValueError:
                         return (
                             "Invalid measurement",
@@ -659,9 +743,9 @@ def register_routes(app):
                     ),
                 )
 
-        # If you edited a completed historical
-        # week, immediately check its trophies.
-        iso = selected_date.isocalendar()
+        iso = (
+            selected_date.isocalendar()
+        )
 
         week_sunday = (
             date.fromisocalendar(
@@ -671,7 +755,10 @@ def register_routes(app):
             )
         )
 
-        if week_sunday < today_local():
+        if (
+            week_sunday
+            < today_local()
+        ):
             evaluate_weekly_achievements(
                 iso.year,
                 iso.week,
