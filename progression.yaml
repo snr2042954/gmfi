@@ -1,0 +1,130 @@
+character:
+  level_curve:
+    base_xp: 100
+    growth_per_level: 50
+
+  titles:
+    - min_level: 1
+      title: Initiate
+
+    - min_level: 5
+      title: Adventurer
+
+    - min_level: 10
+      title: Pathfinder
+
+    - min_level: 20
+      title: Veteran
+
+    - min_level: 30
+      title: Champion
+
+    - min_level: 50
+      title: Legend
+
+
+skills:
+  level_curve:
+    xp_per_level: 100
+
+  definitions:
+    strength:
+      name: Strength
+      short: STR
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Ironbound
+        - min_level: 10
+          title: Juggernaut
+        - min_level: 20
+          title: Titan
+
+    endurance:
+      name: Endurance
+      short: END
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Runner
+        - min_level: 10
+          title: Roadrunner
+        - min_level: 20
+          title: Relentless
+
+    vitality:
+      name: Vitality
+      short: VIT
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Healthy
+        - min_level: 10
+          title: Resilient
+        - min_level: 20
+          title: Unbreakable
+
+    intelligence:
+      name: Intelligence
+      short: INT
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Scholar
+        - min_level: 10
+          title: Sage
+        - min_level: 20
+          title: Polymath
+
+    creativity:
+      name: Creativity
+      short: CRE
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Maker
+        - min_level: 10
+          title: Artisan
+        - min_level: 20
+          title: Visionary
+
+    discipline:
+      name: Discipline
+      short: DISC
+
+      titles:
+        - min_level: 1
+          title: Novice
+        - min_level: 5
+          title: Consistent
+        - min_level: 10
+          title: Disciplined
+        - min_level: 20
+          title: Unyielding
+
+
+ranks:
+  - name: Bronze
+    min_total_skill_levels: 6
+
+  - name: Silver
+    min_total_skill_levels: 18
+
+  - name: Gold
+    min_total_skill_levels: 36
+
+  - name: Platinum
+    min_total_skill_levels: 60
+
+  - name: Mythic
+    min_total_skill_levels: 120

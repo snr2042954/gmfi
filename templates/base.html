@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>{% block title %}gmfi{% endblock %}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+<main class="container">
+
+    <header class="header">
+
+        <div>
+            <div class="brand">
+                gmfi
+            </div>
+
+            <div class="muted">
+                {{ today }}
+            </div>
+        </div>
+
+        <nav class="nav">
+
+            <a
+                href="{{ url_for('today_page') }}"
+                class="{% if active_page == 'today' %}active{% endif %}"
+            >
+                Today
+            </a>
+
+            <a
+                href="{{ url_for('workouts_page') }}"
+                class="{% if active_page == 'workouts' %}active{% endif %}"
+            >
+                Workouts
+            </a>
+
+            <a
+                href="{{ url_for('character_page') }}"
+                class="{% if active_page == 'character' %}active{% endif %}"
+            >
+                Character
+            </a>
+
+            <a
+                href="{{ url_for('week_page') }}"
+                class="{% if active_page == 'week' %}active{% endif %}"
+            >
+                Week
+            </a>
+
+            <a
+                href="{{ url_for('trophies_page') }}"
+                class="{% if active_page == 'trophies' %}active{% endif %}"
+            >
+                Trophies
+            </a>
+
+        </nav>
+
+    </header>
+
+
+    {% block content %}
+    {% endblock %}
+
+</main>
+
+</body>
+
+</html>

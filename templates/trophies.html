@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}
+Trophies · gmfi
+{% endblock %}
+
+{% block content %}
+
+<section>
+
+    <div class="section-title">
+
+        <div>
+
+            <div class="eyebrow">
+                LEGACY
+            </div>
+
+            <h1>
+                Trophy Room
+            </h1>
+
+            <div class="muted">
+                Permanent records of exceptional weeks.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {% if trophies %}
+
+        <div class="trophy-grid">
+
+            {% for trophy in trophies %}
+
+                <div class="trophy-card">
+
+                    <div class="trophy-icon">
+                        ♛
+                    </div>
+
+                    <div>
+
+                        <div class="eyebrow">
+                            WEEK {{ trophy.week }}
+                            ·
+                            {{ trophy.year }}
+                        </div>
+
+                        <h2>
+                            {{ trophy.name }}
+                        </h2>
+
+                        <p class="muted">
+                            {{ trophy.description }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+
+    {% else %}
+
+        <div class="panel">
+
+            <div class="muted">
+                No trophies earned yet.
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</section>
+
+{% endblock %}

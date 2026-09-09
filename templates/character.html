@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}
+Character · gmfi
+{% endblock %}
+
+{% block content %}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+            <div class="eyebrow">
+                CHARACTER
+            </div>
+
+            <h1>
+                Level {{ character.level }}
+            </h1>
+
+            <div class="muted">
+                {{ character.title }}
+                ·
+                {{ rank.name }}
+            </div>
+        </div>
+
+        <strong>
+            {{ total_xp }} XP
+        </strong>
+
+    </div>
+
+
+    <div class="xp-bar">
+        <div
+            class="xp-fill"
+            style="width: {{ character.percentage }}%"
+        ></div>
+    </div>
+
+
+    <div class="xp-meta">
+
+        <span>
+            {{ character.current_xp }}
+            /
+            {{ character.required_xp }}
+        </span>
+
+        <span>
+            Next level
+        </span>
+
+    </div>
+
+</section>
+
+
+<section>
+
+    <div class="section-title">
+        <div>
+            <div class="eyebrow">
+                SKILLS
+            </div>
+
+            <h2>
+                Stats
+            </h2>
+        </div>
+    </div>
+
+
+    <div class="stats-grid">
+
+        {% for skill in skills %}
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div>
+
+                        <span class="stat-short">
+                            {{ skill.short }}
+                        </span>
+
+                        <small>
+                            {{ skill.name }}
+                        </small>
+
+                        <small>
+                            {{ skill.title }}
+                        </small>
+
+                    </div>
+
+                    <strong>
+                        Lv. {{ skill.level }}
+                    </strong>
+
+                </div>
+
+                <div class="stat-bar">
+                    <div
+                        class="stat-fill"
+                        style="width: {{ skill.percentage }}%"
+                    ></div>
+                </div>
+
+                <small class="muted">
+                    {{ skill.current_xp }}
+                    /
+                    {{ skill.required_xp }}
+                    XP
+                </small>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}
+Today · gmfi
+{% endblock %}
+
+{% block content %}
+
+<section>
+
+    <div class="section-title">
+        <div>
+            <div class="eyebrow">
+                QUEST LOG
+            </div>
+
+            <h1>
+                Today
+            </h1>
+        </div>
+
+        <strong>
+            +{{ today_xp }} XP
+        </strong>
+    </div>
+
+
+    <div class="quest-list">
+
+        {% for quest in daily_quests %}
+
+            <form
+                method="post"
+                action="{{ url_for('toggle_quest', quest_id=quest.id) }}"
+            >
+
+                <button
+                    class="quest {% if quest.completed %}completed{% endif %}"
+                    type="submit"
+                >
+
+                    <div class="quest-main">
+
+                        <div class="quest-check">
+                            {% if quest.completed %}
+                                ✓
+                            {% else %}
+                                +
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <strong>
+                                {{ quest.name }}
+                            </strong>
+
+                            <small>
+                                {{ quest.description }}
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="quest-reward">
+                        +{{ quest.xp.base }} XP
+                    </div>
+
+                </button>
+
+            </form>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

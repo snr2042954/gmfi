@@ -1,9 +1,7 @@
 <!doctype html>
-
 <html lang="en">
 
 <head>
-
     <meta charset="utf-8">
 
     <meta
@@ -17,20 +15,15 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
-
 </head>
 
 <body>
 
 <main class="container">
 
-
-    <!-- HEADER -->
-
     <header class="header">
 
         <div>
-
             <div class="brand">
                 gmfi
             </div>
@@ -38,34 +31,26 @@
             <div class="muted">
                 {{ today }}
             </div>
-
         </div>
 
-
         <div class="level">
-
             <span>
                 LEVEL
             </span>
 
             <strong>
-                {{ level.level }}
+                {{ character.level }}
             </strong>
-
         </div>
 
     </header>
 
-
-
-    <!-- PLAYER -->
 
     <section class="panel">
 
         <div class="panel-header">
 
             <div>
-
                 <div class="eyebrow">
                     PLAYER
                 </div>
@@ -74,6 +59,11 @@
                     Progress
                 </h1>
 
+                <div class="muted">
+                    {{ character.title }}
+                    ·
+                    {{ rank.name }}
+                </div>
             </div>
 
             <strong>
@@ -84,21 +74,19 @@
 
 
         <div class="xp-bar">
-
             <div
                 class="xp-fill"
-                style="width: {{ level.percentage }}%"
+                style="width: {{ character.percentage }}%"
             ></div>
-
         </div>
 
 
         <div class="xp-meta">
 
             <span>
-                {{ level.current_xp }}
+                {{ character.current_xp }}
                 /
-                {{ level.required_xp }}
+                {{ character.required_xp }}
             </span>
 
             <span>
@@ -111,7 +99,6 @@
         <div class="summary-grid">
 
             <div class="summary">
-
                 <span>
                     Today
                 </span>
@@ -119,12 +106,9 @@
                 <strong>
                     +{{ today_xp }} XP
                 </strong>
-
             </div>
 
-
             <div class="summary">
-
                 <span>
                     This week
                 </span>
@@ -132,12 +116,9 @@
                 <strong>
                     +{{ week_xp }} XP
                 </strong>
-
             </div>
 
-
             <div class="summary">
-
                 <span>
                     Quests today
                 </span>
@@ -147,7 +128,6 @@
                     /
                     {{ total_today }}
                 </strong>
-
             </div>
 
         </div>
@@ -155,15 +135,11 @@
     </section>
 
 
-
-    <!-- TODAY -->
-
     <section>
 
         <div class="section-title">
 
             <div>
-
                 <div class="eyebrow">
                     QUEST LOG
                 </div>
@@ -171,7 +147,6 @@
                 <h2>
                     Today
                 </h2>
-
             </div>
 
             <div>
@@ -238,15 +213,11 @@
     </section>
 
 
-
-    <!-- WORKOUTS -->
-
     <section>
 
         <div class="section-title">
 
             <div>
-
                 <div class="eyebrow">
                     TRAINING
                 </div>
@@ -254,7 +225,6 @@
                 <h2>
                     Workout
                 </h2>
-
             </div>
 
         </div>
@@ -289,19 +259,14 @@
                                 Completed
                             </span>
 
-
                             {% if quest.log.measurement_value is not none %}
 
                                 <strong>
-
                                     {{ quest.log.measurement_value }}
-
                                     {{ quest.measurement.unit }}
-
                                 </strong>
 
                             {% endif %}
-
 
                             <span>
                                 +{{ quest.log.xp_earned }} XP
@@ -324,7 +289,6 @@
 
                         </form>
 
-
                     {% else %}
 
                         <form
@@ -342,10 +306,8 @@
                                     <input
                                         type="number"
                                         name="measurement_value"
-
                                         min="{{ quest.measurement.min }}"
                                         step="{{ quest.measurement.step }}"
-
                                         required
                                     >
 
@@ -378,15 +340,11 @@
     </section>
 
 
-
-    <!-- CHARACTER -->
-
     <section>
 
         <div class="section-title">
 
             <div>
-
                 <div class="eyebrow">
                     CHARACTER
                 </div>
@@ -394,7 +352,10 @@
                 <h2>
                     Stats
                 </h2>
+            </div>
 
+            <div class="muted">
+                {{ rank.name }}
             </div>
 
         </div>
@@ -418,10 +379,14 @@
                                 {{ skill.name }}
                             </small>
 
+                            <small>
+                                {{ skill.title }}
+                            </small>
+
                         </div>
 
                         <strong>
-                            {{ skill.value }}
+                            Lv. {{ skill.level }}
                         </strong>
 
                     </div>
@@ -436,6 +401,14 @@
 
                     </div>
 
+
+                    <small class="muted">
+                        {{ skill.current_xp }}
+                        /
+                        {{ skill.required_xp }}
+                        XP
+                    </small>
+
                 </div>
 
             {% endfor %}
@@ -445,15 +418,11 @@
     </section>
 
 
-
-    <!-- WEEK -->
-
     <section>
 
         <div class="section-title">
 
             <div>
-
                 <div class="eyebrow">
                     HISTORY
                 </div>
@@ -461,7 +430,6 @@
                 <h2>
                     This week
                 </h2>
-
             </div>
 
         </div>
@@ -482,13 +450,11 @@
                         {% for day in week_dates %}
 
                             <th>
-
                                 {{ day.strftime("%a") }}
 
                                 <span>
                                     {{ day.strftime("%d") }}
                                 </span>
-
                             </th>
 
                         {% endfor %}
@@ -507,7 +473,6 @@
                             <td>
                                 {{ row.quest.name }}
                             </td>
-
 
                             {% for day in row.days %}
 
@@ -552,7 +517,6 @@
         </div>
 
     </section>
-
 
 </main>
 

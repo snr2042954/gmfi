@@ -47,6 +47,24 @@ def init_db():
             );
 
 
+            CREATE TABLE IF NOT EXISTS trophies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                achievement_id TEXT NOT NULL,
+
+                iso_year INTEGER NOT NULL,
+                iso_week INTEGER NOT NULL,
+
+                earned_at TEXT NOT NULL,
+
+                UNIQUE(
+                    achievement_id,
+                    iso_year,
+                    iso_week
+                )
+            );
+
+
             CREATE INDEX IF NOT EXISTS
             idx_quest_logs_completed_date
             ON quest_logs(completed_date);
@@ -55,5 +73,13 @@ def init_db():
             CREATE INDEX IF NOT EXISTS
             idx_quest_logs_quest_id
             ON quest_logs(quest_id);
+
+
+            CREATE INDEX IF NOT EXISTS
+            idx_trophies_week
+            ON trophies(
+                iso_year,
+                iso_week
+            );
             """
         )

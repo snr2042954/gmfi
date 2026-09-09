@@ -726,3 +726,349 @@ h2 {
     }
 
 }
+
+.nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.nav a {
+    padding: 8px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    color: var(--muted);
+
+    text-decoration: none;
+
+    background: var(--panel);
+}
+
+.nav a:hover {
+    color: var(--text);
+}
+
+.nav a.active {
+    border-color: var(--accent);
+
+    color: var(--accent);
+
+    background: var(--accent-dark);
+}
+
+@media (max-width: 700px) {
+    .header {
+        align-items: flex-start;
+        gap: 16px;
+        flex-direction: column;
+    }
+
+    .nav {
+        width: 100%;
+    }
+
+    .nav a {
+        flex: 1;
+        text-align: center;
+    }
+}
+
+/* EDITABLE WEEK */
+
+.week-cell {
+    position: relative;
+
+    width: 90px;
+    min-width: 70px;
+
+    padding: 8px !important;
+}
+
+.week-cell form {
+    margin: 0;
+}
+
+.week-quest-name {
+    min-width: 150px;
+}
+
+.week-display {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+}
+
+
+/* DEFAULT CELL STATE */
+
+.week-trigger {
+    min-width: 36px;
+    min-height: 36px;
+
+    padding: 4px;
+
+    border: 0;
+    border-radius: 7px;
+
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.week-trigger:hover {
+    background: var(--panel-hover);
+}
+
+.week-empty {
+    color: #5f5f68;
+
+    font-size: 20px;
+    line-height: 1;
+}
+
+.week-empty:hover {
+    color: var(--text);
+}
+
+.week-completed {
+    color: var(--accent);
+
+    font-weight: 700;
+}
+
+.week-completed small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    font-weight: 400;
+}
+
+.week-future {
+    color: #34343a;
+}
+
+.today-column {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+
+/* EDITOR */
+
+.week-editor {
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+}
+
+.week-display.editing .week-trigger {
+    display: none;
+}
+
+.week-display.editing .week-editor {
+    display: flex;
+}
+
+
+/* WORKOUT INPUT */
+
+.week-inline-form {
+    display: flex;
+
+    align-items: center;
+
+    gap: 4px;
+}
+
+.week-measurement {
+    display: flex;
+
+    align-items: center;
+
+    width: 72px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    background: var(--input);
+}
+
+.week-measurement:focus-within {
+    border-color: var(--accent);
+}
+
+.week-measurement input {
+    width: 45px;
+
+    padding: 6px;
+
+    border: 0;
+    outline: 0;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-size: 11px;
+}
+
+.week-measurement span {
+    padding-right: 5px;
+
+    color: var(--muted);
+
+    font-size: 9px;
+}
+
+
+/* EDITOR BUTTONS */
+
+.week-save-button {
+    padding: 6px 8px;
+
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+
+    background: var(--accent-dark);
+
+    color: var(--accent);
+
+    cursor: pointer;
+
+    font-size: 10px;
+}
+
+.week-save-button:hover {
+    background: var(--accent);
+    color: var(--background);
+}
+
+.week-undo-button {
+    padding: 6px 8px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    background: transparent;
+
+    color: var(--text);
+
+    cursor: pointer;
+
+    font-size: 10px;
+}
+
+.week-undo-button:hover {
+    border-color: #9f4444;
+
+    color: #ff7777;
+}
+
+.week-cancel-button {
+    padding: 4px 5px;
+
+    border: 0;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+
+    font-size: 12px;
+}
+
+.week-cancel-button:hover {
+    color: var(--text);
+}
+
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+
+    .week-cell {
+        min-width: 66px;
+    }
+
+    .week-quest-name {
+        min-width: 130px;
+    }
+
+}
+
+.trophy-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+.trophy-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 18px;
+
+    min-height: 130px;
+
+    padding: 20px;
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+
+    background: var(--panel);
+}
+
+.trophy-icon {
+    width: 60px;
+    height: 60px;
+
+    display: grid;
+
+    flex-shrink: 0;
+
+    place-items: center;
+
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+
+    background: var(--accent-dark);
+
+    color: var(--accent);
+
+    font-size: 28px;
+}
+
+.trophy-card h2 {
+    margin-top: 4px;
+}
+
+.trophy-card p {
+    margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+
+    .trophy-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

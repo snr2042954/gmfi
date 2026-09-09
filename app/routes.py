@@ -9,21 +9,36 @@ from flask import (
     url_for,
 )
 
+from app.achievements import (
+    evaluate_weekly_achievements,
+    get_achievement_by_id,
+)
 from app.db import get_db
 from app.progression import (
-    SKILLS,
-    get_level_progress,
+    get_character_progress,
+    get_rank,
+    get_skill_ids,
+    get_skill_progress,
 )
 from app.quests import (
     get_quest_by_id,
     load_quests,
 )
+from app.timeutils import (
+    now_local,
+    today_local,
+)
 from app.xp import calculate_rewards
 
 
-def get_week_dates(target_date):
-    monday = target_date - timedelta(
-        days=target_date.weekday()
+def get_week_dates(
+    iso_year,
+    iso_week,
+):
+    monday = date.fromisocalendar(
+        iso_year,
+        iso_week,
+        1,
     )
 
     return [
@@ -32,33 +47,224 @@ def get_week_dates(target_date):
     ]
 
 
+def get_today_context():
+    today = today_local().isoformat()
+
+    quests = load_quests()
+
+    with get_db() as db:
+        today_logs = db.execute(
+            """
+            SELECT *
+            FROM quest_logs
+            WHERE completed_date = ?
+            """,
+            (today,),
+        ).fetchall()
+
+    log_map = {
+        row["quest_id"]: row
+        for row in today_logs
+    }
+
+    for quest in quests:
+        log = log_map.get(
+            quest["id"]
+        )
+
+        quest["completed"] = (
+            log is not None
+        )
+
+        quest["log"] = (
+            dict(log)
+            if log
+            else None
+        )
+
+    return (
+        today,
+        quests,
+        today_logs,
+    )
+
+
 def register_routes(app):
 
     @app.route("/")
-    def dashboard():
-        today_date = date.today()
-        today = today_date.isoformat()
+    def today_page():
+        (
+            today,
+            quests,
+            today_logs,
+        ) = get_today_context()
 
-        quests = load_quests()
+        daily_quests = [
+            quest
+            for quest in quests
+            if quest["category"] != "workout"
+        ]
 
-        week_dates = get_week_dates(
-            today_date
+        today_xp = sum(
+            row["xp_earned"]
+            for row in today_logs
         )
 
-        week_start = week_dates[0].isoformat()
-        week_end = week_dates[-1].isoformat()
+        return render_template(
+            "today.html",
+            today=today,
+            active_page="today",
+            daily_quests=daily_quests,
+            today_xp=today_xp,
+            completed_today=len(
+                today_logs
+            ),
+            total_today=len(quests),
+        )
+
+
+    @app.route("/workouts")
+    def workouts_page():
+        (
+            today,
+            quests,
+            _,
+        ) = get_today_context()
+
+        workout_quests = [
+            quest
+            for quest in quests
+            if quest["category"] == "workout"
+        ]
+
+        return render_template(
+            "workouts.html",
+            today=today,
+            active_page="workouts",
+            workout_quests=workout_quests,
+        )
+
+
+    @app.route("/character")
+    def character_page():
+        today = (
+            today_local().isoformat()
+        )
 
         with get_db() as db:
-
-            today_logs = db.execute(
+            all_logs = db.execute(
                 """
                 SELECT *
                 FROM quest_logs
-                WHERE completed_date = ?
-                """,
-                (today,),
+                ORDER BY completed_date
+                """
             ).fetchall()
 
+        total_xp = sum(
+            row["xp_earned"]
+            for row in all_logs
+        )
+
+        character = (
+            get_character_progress(
+                total_xp
+            )
+        )
+
+        skill_totals = defaultdict(
+            float
+        )
+
+        for log in all_logs:
+            skill_data = json.loads(
+                log["skill_xp_json"]
+            )
+
+            for (
+                skill_id,
+                amount,
+            ) in skill_data.items():
+
+                skill_totals[
+                    skill_id
+                ] += amount
+
+        skills = [
+            get_skill_progress(
+                skill_id,
+                skill_totals.get(
+                    skill_id,
+                    0,
+                ),
+            )
+            for skill_id
+            in get_skill_ids()
+        ]
+
+        rank = get_rank(
+            skills
+        )
+
+        return render_template(
+            "character.html",
+            today=today,
+            active_page="character",
+            total_xp=total_xp,
+            character=character,
+            skills=skills,
+            rank=rank,
+        )
+
+
+    @app.route("/week")
+    def week_page():
+        current_date = today_local()
+
+        current_iso = (
+            current_date.isocalendar()
+        )
+
+        try:
+            selected_year = int(
+                request.args.get(
+                    "year",
+                    current_iso.year,
+                )
+            )
+
+            selected_week = int(
+                request.args.get(
+                    "week",
+                    current_iso.week,
+                )
+            )
+
+            week_dates = get_week_dates(
+                selected_year,
+                selected_week,
+            )
+
+        except (
+            ValueError,
+            TypeError,
+        ):
+            return "Invalid week", 400
+
+        today = (
+            current_date.isoformat()
+        )
+
+        week_start = (
+            week_dates[0].isoformat()
+        )
+
+        week_end = (
+            week_dates[-1].isoformat()
+        )
+
+        quests = load_quests()
+
+        with get_db() as db:
             week_logs = db.execute(
                 """
                 SELECT *
@@ -72,123 +278,6 @@ def register_routes(app):
                     week_end,
                 ),
             ).fetchall()
-
-            all_logs = db.execute(
-                """
-                SELECT *
-                FROM quest_logs
-                ORDER BY completed_date
-                """
-            ).fetchall()
-
-        # =========================
-        # TODAY
-        # =========================
-
-        today_log_map = {
-            row["quest_id"]: row
-            for row in today_logs
-        }
-
-        for quest in quests:
-            log = today_log_map.get(
-                quest["id"]
-            )
-
-            quest["completed"] = (
-                log is not None
-            )
-
-            quest["log"] = (
-                dict(log)
-                if log
-                else None
-            )
-
-        daily_quests = [
-            quest
-            for quest in quests
-            if quest["category"] != "workout"
-        ]
-
-        workout_quests = [
-            quest
-            for quest in quests
-            if quest["category"] == "workout"
-        ]
-
-        # =========================
-        # GLOBAL XP
-        # =========================
-
-        total_xp = sum(
-            row["xp_earned"]
-            for row in all_logs
-        )
-
-        today_xp = sum(
-            row["xp_earned"]
-            for row in today_logs
-        )
-
-        week_xp = sum(
-            row["xp_earned"]
-            for row in week_logs
-        )
-
-        level = get_level_progress(
-            total_xp
-        )
-
-        # =========================
-        # SKILLS
-        # =========================
-
-        skill_totals = defaultdict(float)
-
-        for log in all_logs:
-            skill_data = json.loads(
-                log["skill_xp_json"]
-            )
-
-            for skill, amount in skill_data.items():
-                skill_totals[skill] += amount
-
-        skills = []
-
-        max_skill_value = max(
-            skill_totals.values(),
-            default=1,
-        )
-
-        for skill_id, config in SKILLS.items():
-            value = round(
-                skill_totals.get(
-                    skill_id,
-                    0,
-                ),
-                1,
-            )
-
-            percentage = (
-                value / max_skill_value * 100
-                if max_skill_value
-                else 0
-            )
-
-            skills.append(
-                {
-                    "id": skill_id,
-                    "name": config["name"],
-                    "short": config["short"],
-                    "value": value,
-                    "percentage": percentage,
-                }
-            )
-
-        # =========================
-        # WEEK
-        # =========================
 
         week_log_map = {
             (
@@ -204,7 +293,9 @@ def register_routes(app):
             days = []
 
             for day in week_dates:
-                day_string = day.isoformat()
+                day_string = (
+                    day.isoformat()
+                )
 
                 log = week_log_map.get(
                     (
@@ -216,8 +307,9 @@ def register_routes(app):
                 days.append(
                     {
                         "date": day_string,
-                        "day": day.strftime("%a"),
-                        "completed": log is not None,
+                        "completed": (
+                            log is not None
+                        ),
                         "log": (
                             dict(log)
                             if log
@@ -233,42 +325,111 @@ def register_routes(app):
                 }
             )
 
-        completed_today = len(
-            today_logs
+        week_xp = sum(
+            row["xp_earned"]
+            for row in week_logs
         )
 
-        total_today = len(quests)
+        # Only evaluate weeks that have
+        # completely finished.
+        if week_end < today:
+            evaluate_weekly_achievements(
+                selected_year,
+                selected_week,
+            )
 
-        today_percentage = (
-            completed_today
-            / total_today
-            * 100
-            if total_today
-            else 0
+        available_years = range(
+            current_iso.year - 5,
+            current_iso.year + 2,
         )
 
         return render_template(
-            "dashboard.html",
-
+            "week.html",
             today=today,
+            active_page="week",
 
-            daily_quests=daily_quests,
-            workout_quests=workout_quests,
+            selected_year=selected_year,
+            selected_week=selected_week,
 
-            total_xp=total_xp,
-            today_xp=today_xp,
-            week_xp=week_xp,
-
-            level=level,
-
-            skills=skills,
+            available_years=available_years,
+            available_weeks=range(
+                1,
+                54,
+            ),
 
             week_dates=week_dates,
             week_rows=week_rows,
+            week_xp=week_xp,
+        )
 
-            completed_today=completed_today,
-            total_today=total_today,
-            today_percentage=today_percentage,
+
+    @app.route("/trophies")
+    def trophies_page():
+        today = (
+            today_local().isoformat()
+        )
+
+        with get_db() as db:
+            rows = db.execute(
+                """
+                SELECT *
+                FROM trophies
+                ORDER BY
+                    iso_year DESC,
+                    iso_week DESC,
+                    earned_at DESC
+                """
+            ).fetchall()
+
+        trophies = []
+
+        for row in rows:
+            achievement = (
+                get_achievement_by_id(
+                    row[
+                        "achievement_id"
+                    ]
+                )
+            )
+
+            if achievement is None:
+                continue
+
+            trophies.append(
+                {
+                    "name": (
+                        achievement[
+                            "name"
+                        ]
+                    ),
+                    "description": (
+                        achievement[
+                            "description"
+                        ]
+                    ),
+                    "icon": (
+                        achievement.get(
+                            "icon",
+                            "trophy",
+                        )
+                    ),
+                    "year": (
+                        row["iso_year"]
+                    ),
+                    "week": (
+                        row["iso_week"]
+                    ),
+                    "earned_at": (
+                        row["earned_at"]
+                    ),
+                }
+            )
+
+        return render_template(
+            "trophies.html",
+            today=today,
+            active_page="trophies",
+            trophies=trophies,
         )
 
 
@@ -281,15 +442,44 @@ def register_routes(app):
         )
 
         if quest is None:
-            return "Quest not found", 404
+            return (
+                "Quest not found",
+                404,
+            )
 
-        completed_date = request.form.get(
-            "date",
-            date.today().isoformat(),
+        completed_date = (
+            request.form.get(
+                "date",
+                today_local().isoformat(),
+            )
         )
 
-        measurement_value = request.form.get(
-            "measurement_value"
+        try:
+            selected_date = (
+                datetime.strptime(
+                    completed_date,
+                    "%Y-%m-%d",
+                ).date()
+            )
+        except ValueError:
+            return (
+                "Invalid date",
+                400,
+            )
+
+        if (
+            selected_date
+            > today_local()
+        ):
+            return (
+                "Cannot log quests in the future",
+                400,
+            )
+
+        measurement_value = (
+            request.form.get(
+                "measurement_value"
+            )
         )
 
         if measurement_value == "":
@@ -309,8 +499,6 @@ def register_routes(app):
                 ),
             ).fetchone()
 
-            # Clicking an already completed quest
-            # removes that day's completion.
             if existing:
                 db.execute(
                     """
@@ -322,75 +510,85 @@ def register_routes(app):
                     ),
                 )
 
-                return redirect(
-                    url_for("dashboard")
+            else:
+                measurement = (
+                    quest.get(
+                        "measurement"
+                    )
                 )
 
-            # Measurement quests must have a value.
-            measurement = quest.get(
-                "measurement"
-            )
-
-            if measurement:
-                if measurement_value is None:
-                    return (
-                        "Measurement required",
-                        400,
-                    )
-
-                try:
-                    measurement_value = float(
+                if measurement:
+                    if (
                         measurement_value
-                    )
-                except ValueError:
-                    return (
-                        "Invalid measurement",
-                        400,
+                        is None
+                    ):
+                        return (
+                            "Measurement required",
+                            400,
+                        )
+
+                    try:
+                        measurement_value = float(
+                            measurement_value
+                        )
+                    except ValueError:
+                        return (
+                            "Invalid measurement",
+                            400,
+                        )
+
+                    minimum = (
+                        measurement.get(
+                            "min"
+                        )
                     )
 
-                minimum = measurement.get(
-                    "min"
+                    if (
+                        minimum is not None
+                        and measurement_value
+                        < float(minimum)
+                    ):
+                        return (
+                            "Measurement below minimum",
+                            400,
+                        )
+
+                rewards = (
+                    calculate_rewards(
+                        quest,
+                        measurement_value,
+                    )
                 )
 
-                if (
-                    minimum is not None
-                    and measurement_value
-                    < float(minimum)
-                ):
-                    return (
-                        "Measurement below minimum",
-                        400,
+                db.execute(
+                    """
+                    INSERT INTO quest_logs (
+                        quest_id,
+                        completed_date,
+                        created_at,
+                        measurement_value,
+                        xp_earned,
+                        skill_xp_json
                     )
-
-            rewards = calculate_rewards(
-                quest,
-                measurement_value,
-            )
-
-            db.execute(
-                """
-                INSERT INTO quest_logs (
-                    quest_id,
-                    completed_date,
-                    created_at,
-                    measurement_value,
-                    xp_earned,
-                    skill_xp_json
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    quest_id,
-                    completed_date,
-                    datetime.now().isoformat(),
-                    measurement_value,
-                    rewards["total"],
-                    json.dumps(
-                        rewards["skills"]
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        quest_id,
+                        completed_date,
+                        now_local().isoformat(),
+                        measurement_value,
+                        rewards["total"],
+                        json.dumps(
+                            rewards[
+                                "skills"
+                            ]
+                        ),
                     ),
-                ),
-            )
+                )
 
         return redirect(
-            url_for("dashboard")
+            request.referrer
+            or url_for(
+                "today_page"
+            )
         )
