@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: gmfi
+    container_name: ${COMPOSE_PROJECT_NAME}
 
     restart: unless-stopped
 
