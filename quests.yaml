@@ -1,0 +1,268 @@
+quests:
+
+  # =========================
+  # HEALTH
+  # =========================
+
+  - id: vitamins
+    name: Take vitamins
+    category: health
+    description: Take daily vitamins
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  # =========================
+  # NUTRITION
+  # =========================
+
+  - id: eggs
+    name: Eat 4 eggs
+    category: nutrition
+    description: Eat at least four eggs
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  - id: kwark
+    name: Eat kwark
+    category: nutrition
+    description: Eat daily portion of kwark
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  # =========================
+  # LEARNING
+  # =========================
+
+  - id: reading
+    name: Read 10 pages
+    category: learning
+    description: Read at least ten pages of a book
+
+    xp:
+      base: 15
+
+      skills:
+        intelligence:
+          base: 3
+
+        discipline:
+          base: 1
+
+
+  # =========================
+  # HOBBY
+  # =========================
+
+  - id: hobby
+    name: Hobby for 1 hour
+    category: hobby
+    description: Spend at least one hour on a hobby
+
+    xp:
+      base: 20
+
+      skills:
+        creativity:
+          base: 3
+
+        discipline:
+          base: 1
+
+
+  # =========================
+  # GYM
+  # =========================
+
+  - id: gym_push
+    name: Push
+    category: workout
+    description: Complete a push workout
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
+
+
+  - id: gym_pull
+    name: Pull
+    category: workout
+    description: Complete a pull workout
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
+
+
+  - id: gym_legs
+    name: Legs
+    category: workout
+    description: Complete a leg workout
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        endurance:
+          base: 1
+          per_unit: 0.1
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
+
+
+  # =========================
+  # CARDIO
+  # =========================
+
+  - id: jogging
+    name: Jogging
+    category: workout
+    description: Complete a run
+
+    measurement:
+      type: distance
+      label: Distance
+      unit: km
+      min: 0.1
+      step: 0.1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 5
+        max_units: 15
+
+      skills:
+        endurance:
+          base: 2
+          per_unit: 0.7
+
+        vitality:
+          base: 1
+          per_unit: 0.2
+
+        discipline:
+          base: 1
+
+
+  - id: cycling
+    name: Cycling
+    category: workout
+    description: Complete a cycling session
+
+    measurement:
+      type: distance
+      label: Distance
+      unit: km
+      min: 0.1
+      step: 0.1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 1
+        max_units: 75
+
+      skills:
+        endurance:
+          base: 2
+          per_unit: 0.15
+
+        vitality:
+          base: 1
+          per_unit: 0.05
+
+        discipline:
+          base: 1
