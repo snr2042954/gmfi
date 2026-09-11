@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${TAILSCALE_IP}:${PORT_1}:${PORT_1}"
+      - "${TAILSCALE_IP}:${PORT_1}:8050"
 
     env_file:
       - .env
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "${TAILSCALE_IP}:${PORT_2}:${PORT_2}"
+      - "${TAILSCALE_IP}:${PORT_2}:8050"
 
     env_file:
       - .env

@@ -13,6 +13,6 @@ COPY . .
 
 RUN mkdir -p /app/data
 
-EXPOSE 8014
+EXPOSE 8050
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8014", "--workers", "2", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-", "main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8050", "--workers", "2", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-", "main:app"]
