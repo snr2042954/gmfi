@@ -1,6 +1,7 @@
 .venv/
 .env
 data/
+data_*/
 __pycache__/
 *.pyc
 docker-compose.yml
