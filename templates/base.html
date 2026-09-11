@@ -1,7 +1,9 @@
 <!doctype html>
+
 <html lang="en">
 
 <head>
+
     <meta charset="utf-8">
 
     <meta
@@ -9,13 +11,30 @@
         content="width=device-width, initial-scale=1"
     >
 
-    <title>{% block title %}gmfi{% endblock %}</title>
+    <title>
+        {% block title %}
+        gmfi
+        {% endblock %}
+    </title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ url_for('static', filename='gmfi-logo.png') }}"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="{{ url_for('static', filename='gmfi-logo.png') }}"
+    >
 
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
 </head>
+
 
 <body>
 
@@ -24,14 +43,25 @@
     <header class="header">
 
         <div>
-            <div class="brand">
-                gmfi
-            </div>
+
+            <a
+                href="{{ url_for('today_page') }}"
+                class="brand"
+                aria-label="gmfi home"
+            >
+                <img
+                    src="{{ url_for('static', filename='gmfi-logo.png') }}"
+                    alt="gmfi"
+                    class="brand-logo"
+                >
+            </a>
 
             <div class="muted">
                 {{ today }}
             </div>
+
         </div>
+
 
         <nav class="nav">
 
