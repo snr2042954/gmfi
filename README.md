@@ -1,46 +1,55 @@
 # gmfi
 
-gmfi is a self-hosted life gamification dashboard for tracking habits, nutrition, workouts, reading, hobbies, progression, and weekly achievements.
+gmfi is a self-hosted life-gamification dashboard for tracking habits, nutrition, workouts, reading, personal routines, progression, and weekly achievements.
 
-The application is intentionally simple:
+The application is intentionally small and configuration-driven:
 
 - Flask serves the web application.
-- SQLite stores historical activity.
-- YAML files define configurable game content.
-- Jinja templates render the UI.
+- SQLite stores personal history and progression data.
+- YAML defines quests, XP rewards, progression, skills, ranks, and achievements.
+- Jinja templates render the interface.
 - Docker provides the production deployment.
-- Tailscale can be used to access the app privately on a home server.
+- Tailscale provides private access to the home server.
+- Multiple users run separate gmfi containers with separate databases.
+- The quest catalog can be shared between users while activity history remains private per user.
 
-The main design goal is to keep **configuration separate from application logic**.
+The main design principle is:
 
-Most changes to quests, XP values, skills, level titles, ranks, and trophies should be possible without editing Python code.
+**configuration should remain separate from application logic whenever practical.**
+
+Adding quests, changing XP values, adjusting progression, or defining trophies should generally happen through YAML rather than by rewriting Python.
 
 ---
 
 # Core concepts
 
-gmfi uses four main concepts:
+gmfi revolves around five main concepts:
 
 1. Quests
 2. Quest logs
 3. Progression
 4. Achievements / trophies
+5. Per-user quest state
 
-A quest is something the user can complete once per day.
+A quest is something that can be completed at most once per day.
 
-Examples:
+Examples include:
 
 - take vitamins
-- eat 4 eggs
 - read pages
+- go for a walk
+- eat fruit
 - go jogging
 - go cycling
-- complete a push workout
+- complete a strength workout
 - spend time on a hobby
+- complete a user-created task
 
 Some quests are simple yes/no completions.
 
-Other quests have a measurement attached to them, such as:
+Other quests are measurable.
+
+Examples of measurements include:
 
 - kilometers
 - pages
@@ -49,15 +58,67 @@ Other quests have a measurement attached to them, such as:
 - hours
 - repetitions
 
-Completing a quest creates a permanent record in SQLite.
+Completing a quest creates a permanent row in SQLite.
 
-That record contains the XP and skill rewards that were earned at the time of completion.
+That row contains the global XP and skill XP actually earned at the time of completion.
 
-This is important because changing future XP values in YAML does **not** rewrite historical progress.
+Changing a quest's future reward therefore does **not** rewrite historical progression.
+
+---
+
+# Architecture
+
+gmfi separates three different types of information.
+
+## Shared game configuration
+
+Stored primarily in:
+
+```text
+configuration/
+```
+
+Examples:
+
+- built-in quests
+- user-created shared quests
+- progression rules
+- skill definitions
+- trophy definitions
+
+## Per-user state
+
+Stored in each user's SQLite database.
+
+Examples:
+
+- completed quests
+- measurements
+- earned XP
+- skill XP
+- active/inactive quest choices
+- earned trophies
+
+## Application logic
+
+Stored in Python.
+
+Examples:
+
+- quest loading
+- XP calculations
+- progression calculations
+- achievement evaluation
+- database access
+- routes
+
+This separation allows multiple users to use the same game definition without sharing their personal history.
 
 ---
 
 # Project structure
+
+The current project is approximately:
 
 ```text
 gmfi/
@@ -65,6 +126,7 @@ gmfi/
 │   ├── __init__.py
 │   ├── achievements.py
 │   ├── db.py
+│   ├── glossary_routes.py
 │   ├── progression.py
 │   ├── quests.py
 │   ├── routes.py
@@ -75,12 +137,15 @@ gmfi/
 │   ├── README.md
 │   ├── achievements.yaml
 │   ├── progression.yaml
-│   └── quests.yaml
+│   ├── quests.yaml
+│   └── user-quests.yaml
 │
 ├── data/
 │   └── gmfi.db
 │
 ├── static/
+│   ├── gmfi-logo.png
+│   ├── gmfi-touch-icon.png
 │   └── style.css
 │
 ├── templates/
@@ -88,6 +153,7 @@ gmfi/
 │   │   └── quest_card.html
 │   ├── base.html
 │   ├── character.html
+│   ├── glossary.html
 │   ├── today.html
 │   ├── trophies.html
 │   └── week.html
@@ -96,10 +162,26 @@ gmfi/
 ├── .env
 ├── .gitignore
 ├── Dockerfile
+├── docker-compose.dev.yml
 ├── docker-compose.yml
 ├── main.py
 ├── README.md
 └── requirements.txt
+```
+
+On the production server, each user has a separate host data directory.
+
+For example:
+
+```text
+data_bram/
+data_wouter/
+```
+
+Inside each container, the application still sees:
+
+```text
+/app/data/gmfi.db
 ```
 
 ---
@@ -110,52 +192,60 @@ gmfi/
 
 `main.py` is the application entry point.
 
-It should stay intentionally small.
-
-Example:
+It intentionally remains small.
 
 ```python
 from app import create_app
 
-
 app = create_app()
-
 
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
-        port=8014,
+        port=8050,
         debug=True,
     )
 ```
 
 There are two ways this file is used.
 
-### Local development
+## Local development
 
-When running:
+Running:
 
-```bash
+```powershell
 python main.py
 ```
 
-the Flask development server starts on port `8014`.
+starts Flask's development server on:
 
-### Production
+```text
+http://localhost:8050
+```
 
-Inside Docker, Gunicorn imports:
+## Production
+
+Gunicorn imports:
 
 ```text
 main:app
 ```
 
-This means:
+That means:
 
-- import `main.py`
-- find the variable named `app`
-- serve that Flask application
+1. import `main.py`
+2. find the variable called `app`
+3. serve that Flask application
 
-The `if __name__ == "__main__"` block is not used by Gunicorn.
+The following block:
+
+```python
+if __name__ == "__main__":
+```
+
+is therefore ignored by Gunicorn.
+
+The Flask development server and Gunicorn are two separate execution paths.
 
 ---
 
@@ -163,21 +253,15 @@ The `if __name__ == "__main__"` block is not used by Gunicorn.
 
 ## `app/__init__.py`
 
-This file creates the Flask application.
+The application factory creates the Flask application and registers its components.
 
-Responsibilities:
-
-- create the Flask instance
-- configure template and static paths
-- initialize the database
-- register routes
-
-Typical structure:
+The current structure is approximately:
 
 ```python
 from flask import Flask
 
 from app.db import init_db
+from app.glossary_routes import register_glossary_routes
 from app.routes import register_routes
 
 
@@ -189,51 +273,46 @@ def create_app():
     )
 
     init_db()
+
     register_routes(app)
+    register_glossary_routes(app)
 
     return app
 ```
 
-Keeping application creation here prevents `main.py` from becoming the central location for all logic.
+Keeping application construction here prevents `main.py` from becoming the central location for application logic.
 
 ---
 
-# Database layer
+# Database
 
 ## `app/db.py`
 
-This file owns SQLite access.
+SQLite is used for persistent personal data.
 
-Responsibilities:
-
-- determine the database path
-- create the `data/` directory
-- open SQLite connections
-- initialize required tables
-- initialize indexes
-- enable foreign-key behavior where applicable
-
-The database lives at:
+The application database path is:
 
 ```text
 data/gmfi.db
 ```
 
-The database should never be baked into the Docker image.
+In Docker this becomes:
 
-It is mounted as persistent host storage.
+```text
+/app/data/gmfi.db
+```
+
+because `/app/data` is bind-mounted from the host.
+
+The database should never be baked into the Docker image.
 
 ---
 
-# Database schema
+# Database tables
 
-The primary activity table is:
+## `quest_logs`
 
-```text
-quest_logs
-```
-
-Each row represents one completed quest on one date.
+Each row represents one quest completion.
 
 Important columns:
 
@@ -254,7 +333,13 @@ quest_id: jogging
 completed_date: 2026-09-10
 measurement_value: 5.2
 xp_earned: 36
-skill_xp_json:
+```
+
+Skill rewards are stored as JSON.
+
+Example:
+
+```json
 {
     "endurance": 5.64,
     "vitality": 2.04,
@@ -268,13 +353,44 @@ There is a uniqueness constraint on:
 quest_id + completed_date
 ```
 
-This means every quest can only be logged once per day.
+Therefore, a quest can only be completed once per day.
 
 ---
 
-# Trophy storage
+## `quest_states`
 
-Weekly achievements are stored separately in:
+Quest activation is personal.
+
+The table is conceptually:
+
+```sql
+CREATE TABLE IF NOT EXISTS quest_states (
+    quest_id TEXT PRIMARY KEY,
+    active INTEGER NOT NULL,
+    updated_at TEXT NOT NULL,
+    CHECK (active IN (0, 1))
+);
+```
+
+This table allows two users to share the same quest catalog while having different active tasks.
+
+For example:
+
+```text
+Bram:
+Swimming = active
+
+Wouter:
+Swimming = inactive
+```
+
+Both still see the same shared quest definition.
+
+---
+
+## `trophies`
+
+Earned weekly achievements are stored in:
 
 ```text
 trophies
@@ -290,7 +406,7 @@ iso_week
 earned_at
 ```
 
-The combination of:
+The combination:
 
 ```text
 achievement_id
@@ -300,110 +416,173 @@ iso_week
 
 is unique.
 
-This prevents the same weekly trophy from being awarded twice for the same week.
-
-Example:
-
-```text
-achievement_id: perfect_week
-iso_year: 2026
-iso_week: 37
-earned_at: 2026-09-14T00:05:22+02:00
-```
+A trophy can therefore only be awarded once for a particular ISO week.
 
 ---
 
 # Why XP is stored in the database
 
-Quest definitions may change over time.
+Quest rewards can change.
 
-For example, jogging could originally award:
-
-```yaml
-scaling:
-  per_unit: 5
-```
-
-and later be changed to:
+For example, jogging may initially award:
 
 ```yaml
-scaling:
-  per_unit: 4
+xp:
+  base: 10
+
+  scaling:
+    per_unit: 5
 ```
 
-Historical jogging sessions should not suddenly lose XP.
+and later become:
 
-Therefore, when a quest is completed, gmfi stores:
+```yaml
+xp:
+  base: 10
+
+  scaling:
+    per_unit: 4
+```
+
+Historical sessions should not suddenly lose XP.
+
+Therefore gmfi stores:
 
 ```text
 xp_earned
 skill_xp_json
 ```
 
-directly in the database.
+inside every completed quest log.
 
-Historical progression is therefore based on what was earned at that moment, not on the current YAML configuration.
+Progression is based on those stored rewards.
 
-This also means an inactive or retired quest still contributes to historical progression.
+Historical XP is not recalculated from the current quest YAML.
 
 ---
 
 # Configuration
 
-All user-editable game configuration lives in:
+The primary game configuration lives in:
 
 ```text
 configuration/
 ```
 
-The files are:
+Current files:
 
 ```text
 configuration/
-├── quests.yaml
-├── progression.yaml
 ├── achievements.yaml
+├── progression.yaml
+├── quests.yaml
+├── user-quests.yaml
 └── README.md
 ```
 
-The intention is that most customization should happen here.
+These files do not all have the same ownership model.
 
 ---
 
-# Quest configuration
+# Built-in quests
 
 ## `configuration/quests.yaml`
 
-This file defines all quests.
+This contains administrator-maintained quests.
 
-A basic quest looks like:
+It is committed to Git.
+
+Example:
 
 ```yaml
-- id: vitamins
-  name: Take vitamins
-  category: daily
-  description: Take daily vitamins
-  active: true
+quests:
 
-  xp:
-    base: 5
+  - id: reading
+    name: Reading
+    category: daily
+    description: Read a book
+    active: true
 
-    skills:
-      vitality:
-        base: 2
+    measurement:
+      type: pages
+      label: Pages
+      unit: pages
+      min: 1
+      step: 1
 
-      discipline:
-        base: 1
+    xp:
+      base: 5
+
+      scaling:
+        per_unit: 1
+        max_units: 50
+
+      skills:
+        intelligence:
+          base: 1
+          per_unit: 0.2
+
+        discipline:
+          base: 1
 ```
 
-A measurable quest looks like:
+---
+
+# User-created quests
+
+## `configuration/user-quests.yaml`
+
+Tasks created through the Task Glossary are stored separately in:
+
+```text
+configuration/user-quests.yaml
+```
+
+This file is shared between gmfi containers.
+
+It is intentionally **not committed to Git**.
+
+The resulting model is:
+
+```text
+quests.yaml
+    administrator-maintained catalog
+
+user-quests.yaml
+    shared runtime-created catalog
+```
+
+Both files are loaded together by `app/quests.py`.
+
+---
+
+# Shared custom quests
+
+When a user creates a task through the UI:
+
+1. the form is validated
+2. a stable quest ID is generated from its name
+3. duplicate IDs are rejected
+4. the quest is written to `user-quests.yaml`
+5. its YAML default is stored as inactive
+6. the creator receives an active override in their own database
+
+For example, Bram creates:
+
+```text
+Swimming
+```
+
+The shared quest definition might become:
 
 ```yaml
-- id: jogging
-  name: Jogging
+- id: swimming
+  name: Swimming
   category: workout
-  description: Complete a run
-  active: true
+  workout_type: cardio
+  description: Complete a swimming session
+  active: false
+  created_by: bram
 
   measurement:
     type: distance
@@ -414,29 +593,34 @@ A measurable quest looks like:
 
   xp:
     base: 10
-
-    scaling:
-      per_unit: 5
-      max_units: 15
-
-    skills:
-      endurance:
-        base: 2
-        per_unit: 0.7
-
-      vitality:
-        base: 1
-        per_unit: 0.2
-
-      discipline:
-        base: 1
 ```
+
+The shared definition says:
+
+```yaml
+active: false
+```
+
+but Bram's personal database receives:
+
+```text
+swimming = active
+```
+
+Therefore:
+
+```text
+Bram   -> sees Swimming active
+Wouter -> sees Swimming inactive
+```
+
+Wouter can activate it independently.
 
 ---
 
-# Quest fields
+# Quest IDs
 
-## `id`
+Every quest has a permanent machine identifier.
 
 Example:
 
@@ -444,71 +628,45 @@ Example:
 id: jogging
 ```
 
-This is the permanent machine identifier for the quest.
+The ID is used in:
 
-It is used in the database.
+- SQLite quest logs
+- quest state overrides
+- trophy rules
+- historical linkage
 
-Do not casually rename an existing ID.
+Do not casually rename existing quest IDs.
 
-If historical logs contain:
-
-```text
-quest_id = jogging
-```
-
-and the YAML ID becomes:
-
-```text
-running
-```
-
-those old logs will no longer match that quest definition.
-
-Treat quest IDs as permanent database keys.
-
-If a quest should be retired, prefer:
+Changing:
 
 ```yaml
-active: false
+id: jogging
 ```
 
-rather than deleting or renaming it.
-
----
-
-## `name`
-
-Example:
+to:
 
 ```yaml
-name: Jogging
+id: running
 ```
 
-This is the human-readable name displayed in the UI.
+does not migrate historical rows.
 
-It is safe to change.
+Human-readable names may safely change.
 
 For example:
 
 ```yaml
+id: jogging
 name: Running
 ```
 
-does not affect database linkage as long as the `id` stays the same.
+preserves linkage.
 
 ---
 
-## `category`
+# Quest categories
 
-Example:
-
-```yaml
-category: workout
-```
-
-The category determines where the quest appears in the interface.
-
-Current categories include:
+Every quest belongs to one of the current top-level categories:
 
 ```text
 daily
@@ -516,79 +674,232 @@ nutrition
 workout
 ```
 
-The Today page groups quests by category.
-
-The Week page also groups quests by category for readability.
-
-Adding an entirely new category may require template or route changes depending on how it should be displayed.
-
----
-
-## `description`
-
 Example:
 
 ```yaml
-description: Complete a run
-```
-
-Short explanatory text shown below the quest name.
-
-Safe to change.
-
----
-
-## `active`
-
-Example:
-
-```yaml
-active: true
+category: daily
 ```
 
 or:
 
 ```yaml
-active: false
+category: workout
 ```
 
-An inactive quest:
+Categories determine:
 
-- is hidden from the normal UI
-- cannot be newly logged
-- remains defined in configuration
-- retains all historical logs
-- retains historical global XP
-- retains historical skill XP
-- can still be referenced by old trophy data
+- Today page grouping
+- Week page grouping
+- generic trophy evaluation
+- general task semantics
 
-This is the preferred way to retire a quest.
+Custom tasks use the same categories as built-in tasks.
 
-Example:
+This means trophies can target categories without depending on exact quest IDs.
+
+---
+
+# Workout types
+
+Workout quests may additionally define:
+
+```yaml
+workout_type:
+```
+
+Current supported values are:
+
+```text
+strength
+cardio
+```
+
+Example strength quest:
 
 ```yaml
 - id: gym_push
   name: Push
   category: workout
-  active: false
+  workout_type: strength
 ```
 
-If the training split changes, a new quest can be added separately:
+Example cardio quest:
 
 ```yaml
-- id: gym_upper
-  name: Upper Body
+- id: jogging
+  name: Jogging
   category: workout
-  active: true
+  workout_type: cardio
 ```
 
-Old `gym_push` history stays intact.
+The important distinction is:
+
+```text
+category = broad UI/game category
+workout_type = workout subtype
+```
+
+Both strength and cardio tasks remain:
+
+```yaml
+category: workout
+```
+
+Therefore they continue to appear together under the Workout section of Today and Week.
+
+The subtype is primarily useful for:
+
+- trophy evaluation
+- glossary information
+- future workout-specific behavior
+
+A user-created workout must choose either:
+
+```text
+Strength
+Cardio
+```
+
+when it is created.
+
+An older workout without `workout_type` still counts as a generic workout, but it does not count toward strength-specific or cardio-specific trophies.
+
+---
+
+# Quest activation
+
+The meaning of:
+
+```yaml
+active:
+```
+
+is important.
+
+It is **not** the user's current live state.
+
+Instead:
+
+```yaml
+active: true
+```
+
+means:
+
+> active by default for a user who has never made a personal choice for this quest
+
+and:
+
+```yaml
+active: false
+```
+
+means:
+
+> inactive by default for a user who has never made a personal choice for this quest
+
+The real resolution logic is:
+
+```text
+if quest exists in quest_states:
+    use the user's database override
+else:
+    use quest.active from YAML
+```
+
+Conceptually:
+
+```python
+if quest_id in states:
+    return states[quest_id]
+
+return bool(
+    quest.get(
+        "active",
+        False,
+    )
+)
+```
+
+This makes the YAML catalog suitable for multiple users.
+
+---
+
+# Deactivating quests
+
+A user can activate or deactivate quests from the Task Glossary.
+
+Deactivation:
+
+- removes the quest from normal active tracking
+- does not delete the quest definition
+- does not delete historical logs
+- does not remove XP
+- does not remove skill XP
+- does not remove trophies
+- can be reversed later
+
+Historical data remains valid.
+
+---
+
+# Removing shared custom quests
+
+Shared custom quests are intentionally not deletable by ordinary users.
+
+If a task should be removed from the shared catalog, the user asks the administrator.
+
+The administrator can manually edit:
+
+```text
+configuration/user-quests.yaml
+```
+
+This prevents one user from deleting a shared task that another user may still use.
+
+Deletion is therefore an administrative action.
+
+---
+
+# Promoting user-created quests
+
+A useful custom quest can be promoted into the built-in catalog.
+
+The administrator can:
+
+1. find the quest in `user-quests.yaml`
+2. copy it to `quests.yaml`
+3. preserve its existing `id`
+4. remove the duplicate from `user-quests.yaml`
+
+Preserving the ID is important.
+
+For example:
+
+```yaml
+id: swimming
+```
+
+should remain:
+
+```yaml
+id: swimming
+```
+
+after promotion.
+
+This preserves:
+
+- quest logs
+- active-state overrides
+- historical XP
+- trophy relationships
 
 ---
 
 # Measurements
 
-A quest becomes measurable when it contains:
+A task becomes measurable when it contains:
 
 ```yaml
 measurement:
@@ -605,9 +916,7 @@ measurement:
   step: 0.1
 ```
 
-The application does not strongly interpret the semantic meaning of `type`.
-
-The main fields used by the UI are:
+The UI primarily relies on:
 
 ```text
 label
@@ -616,25 +925,21 @@ min
 step
 ```
 
-Possible measurement concepts include:
+The `type` field provides semantic information but is not heavily interpreted by application logic.
 
-```text
-km
-pages
-sets
-minutes
-hours
-repetitions
-```
+---
 
-Example reading quest:
+# Reading as a measurable task
+
+Reading is a normal Daily-category task even though it has a measurement.
+
+Example:
 
 ```yaml
 - id: reading
   name: Reading
   category: daily
   description: Read a book
-  active: true
 
   measurement:
     type: pages
@@ -642,77 +947,52 @@ Example reading quest:
     unit: pages
     min: 1
     step: 1
-
-  xp:
-    base: 5
-
-    scaling:
-      per_unit: 1
-      max_units: 50
-
-    skills:
-      intelligence:
-        base: 1
-        per_unit: 0.2
-
-      discipline:
-        base: 1
 ```
 
-Example gym quest:
+This demonstrates an important rule:
 
-```yaml
-measurement:
-  type: sets
-  label: Sets
-  unit: sets
-  min: 1
-  step: 1
+**measurement behavior is independent from category.**
+
+A task does not need to be a workout in order to be measurable.
+
+---
+
+# Quest UI behavior
+
+On Today, normal quests have a compact completion button.
+
+For a simple quest:
+
+```text
+Take vitamins              +
 ```
 
-Example skating quest:
+clicking `+` immediately completes it.
 
-```yaml
-- id: skating
-  name: Skating
-  category: workout
-  description: Complete a skating session
-  active: true
+For a measurable quest:
 
-  measurement:
-    type: distance
-    label: Distance
-    unit: km
-    min: 0.1
-    step: 0.1
-
-  xp:
-    base: 10
-
-    scaling:
-      per_unit: 2
-      max_units: 40
-
-    skills:
-      endurance:
-        base: 2
-        per_unit: 0.3
-
-      vitality:
-        base: 1
-        per_unit: 0.1
-
-      discipline:
-        base: 1
+```text
+Reading                    +
 ```
 
-No Python changes should be required for quests that use already-supported measurement behavior.
+clicking `+` expands the card:
+
+```text
+Reading
+
+Pages
+[ 24 ]
+
+[ Complete ]
+```
+
+Once completed, the quest displays its completed state and can be undone.
 
 ---
 
 # XP configuration
 
-Global XP is configured inside:
+Global XP is configured under:
 
 ```yaml
 xp:
@@ -725,7 +1005,7 @@ xp:
   base: 10
 ```
 
-A measurable quest may scale with the measurement:
+A measurable quest can scale with its measurement:
 
 ```yaml
 xp:
@@ -742,8 +1022,8 @@ For a 5 km run:
 10 base XP
 +
 5 × 5 XP
-
-= 35 XP
+=
+35 XP
 ```
 
 For a 30 km run:
@@ -752,24 +1032,29 @@ For a 30 km run:
 10 base XP
 +
 15 × 5 XP
-
-= 85 XP
+=
+85 XP
 ```
 
-The extra distance beyond `max_units` does not award additional XP.
+Only the first 15 units receive scaling XP because:
 
-The cap prevents one unusually large activity from destabilizing progression.
+```yaml
+max_units: 15
+```
+
+This prevents extreme measurements from disproportionately affecting progression.
 
 ---
 
 # Skill XP
 
-Skills are independent from global XP.
+Skill XP is independent from global XP.
 
 Example:
 
 ```yaml
 skills:
+
   endurance:
     base: 2
     per_unit: 0.7
@@ -782,151 +1067,19 @@ skills:
     base: 1
 ```
 
-For a 5 km run:
+Skill XP earned at completion is stored in:
 
 ```text
-END:
-2 + (5 × 0.7)
-= 5.5
-
-VIT:
-1 + (5 × 0.2)
-= 2
-
-DISC:
-1
+quest_logs.skill_xp_json
 ```
 
-These values are stored in `skill_xp_json` when the quest is logged.
-
----
-
-# Quest loader
-
-## `app/quests.py`
-
-This file is responsible for reading:
-
-```text
-configuration/quests.yaml
-```
-
-Main functions include:
-
-```python
-load_quests()
-```
-
-Returns every quest, including inactive ones.
-
-```python
-get_active_quests()
-```
-
-Returns only quests where:
-
-```yaml
-active: true
-```
-
-```python
-get_quest_by_id(quest_id)
-```
-
-Returns a single quest by its permanent ID.
-
-This function intentionally searches inactive quests as well because historical systems may still need those definitions.
-
----
-
-# XP engine
-
-## `app/xp.py`
-
-This file calculates rewards when a quest is completed.
-
-Responsibilities include:
-
-- calculate base XP
-- calculate measurement-scaled XP
-- apply `max_units`
-- calculate individual skill XP
-- return the final reward structure
-
-Typical result:
-
-```python
-{
-    "total": 35,
-    "skills": {
-        "endurance": 5.5,
-        "vitality": 2.0,
-        "discipline": 1.0,
-    },
-}
-```
-
-The routes layer then stores this result in SQLite.
-
----
-
-# Character progression
-
-## `configuration/progression.yaml`
-
-This file controls:
-
-- character level progression
-- character titles
-- skill definitions
-- skill titles
-- overall ranks
-
-Example:
-
-```yaml
-character:
-  level_curve:
-    base_xp: 100
-    growth_per_level: 50
-```
-
-This means each character level requires progressively more XP.
-
-Example progression:
-
-```text
-Level 1 -> 100 XP
-Level 2 -> 150 XP
-Level 3 -> 200 XP
-Level 4 -> 250 XP
-```
-
----
-
-# Character titles
-
-Example:
-
-```yaml
-titles:
-  - min_level: 1
-    title: Initiate
-
-  - min_level: 5
-    title: Adventurer
-
-  - min_level: 10
-    title: Pathfinder
-```
-
-The highest title whose `min_level` has been reached becomes active.
+It is therefore historical and does not change if the YAML reward is later adjusted.
 
 ---
 
 # Skills
 
-Current skills include:
+Current skills are:
 
 ```text
 strength
@@ -937,13 +1090,13 @@ creativity
 discipline
 ```
 
-Each skill can have:
+Each skill has progression data such as:
 
-- display name
-- short name
+- name
+- abbreviation
+- XP
 - level
 - title
-- total XP
 - XP toward next level
 
 Example:
@@ -956,50 +1109,46 @@ Ironbound
 
 ---
 
-# Progression engine
+# Character progression
 
-## `app/progression.py`
+## `configuration/progression.yaml`
 
-This file reads:
+Progression configuration controls:
 
-```text
-configuration/progression.yaml
-```
-
-Responsibilities:
-
-- calculate character level
-- calculate character XP progress
-- determine character title
-- calculate skill levels
-- determine skill titles
-- calculate overall rank
-
-The progression values themselves should remain in YAML.
-
-The Python file contains the logic for interpreting those values.
-
----
-
-# Overall rank
-
-Ranks are based on total skill levels.
+- global character levels
+- character titles
+- skill definitions
+- skill level progression
+- skill titles
+- overall rank thresholds
 
 Example:
 
 ```yaml
-ranks:
-  - name: Bronze
-    min_total_skill_levels: 6
+character:
 
-  - name: Silver
-    min_total_skill_levels: 18
-
-  - name: Gold
-    min_total_skill_levels: 36
+  level_curve:
+    base_xp: 100
+    growth_per_level: 50
 ```
 
-If the six skills are:
+The progression engine lives in:
+
+```text
+app/progression.py
+```
+
+Character levels themselves are not stored separately in SQLite.
+
+They are calculated dynamically from historical XP.
+
+---
+
+# Character rank
+
+Overall rank is based on combined skill levels.
+
+Example:
 
 ```text
 STR 6
@@ -1010,117 +1159,248 @@ CRE 2
 DISC 8
 ```
 
-the combined skill-level total is:
+Combined:
 
 ```text
 30
 ```
 
-The active rank is the highest rank whose threshold is at or below that total.
+The highest configured rank whose threshold is at or below that total becomes active.
 
 ---
 
-# Achievements
+# Achievement system
 
 ## `configuration/achievements.yaml`
 
-Achievements define weekly trophies.
+Weekly trophies are administrator-controlled.
+
+Users may create tasks, but they cannot create or modify trophy definitions through the UI.
+
+The achievement system is intentionally based primarily on stable task semantics rather than a fixed quest list.
+
+Trophies can depend on:
+
+- quest category
+- workout type
+- selected core quest IDs
+
+This allows the quest catalog to evolve without making the Trophy Room obsolete.
+
+---
+
+# Trophy philosophy
+
+Most trophies should not depend on exact combinations such as:
+
+```text
+vitamins + eggs + kwark
+```
+
+because individual routines are fluid.
+
+Instead, generic trophies can target concepts such as:
+
+```text
+Daily activity
+Nutrition consistency
+Workout frequency
+Strength training
+Cardio training
+```
+
+A small number of permanent core tasks may still have dedicated trophies.
+
+Examples include:
+
+```text
+Reading
+Jogging
+Walking
+```
+
+The Bookworm trophy is an example of an intentionally quest-specific achievement.
+
+---
+
+# Achievement format
 
 Example:
 
 ```yaml
-- id: iron_week
-  name: Iron Week
-  description: Hit every part of your gym split during the week.
-  icon: "⚒"
+- id: bookworm
+  name: Bookworm
+  description: Read every day for an entire week.
+  icon: "▤"
 
   requirement_text:
-    - Complete Push at least once.
-    - Complete Pull at least once.
-    - Complete Legs at least once.
+    - Complete Reading on all 7 days.
 
   requirements:
     minimum_days_per_quest:
-      gym_push: 1
-      gym_pull: 1
-      gym_legs: 1
+      reading: 7
 ```
 
-There are two separate parts:
+There are two distinct sections.
+
+## `requirement_text`
+
+Human-readable information shown in the Trophy Room.
+
+Example:
+
+```yaml
+requirement_text:
+  - Complete Reading on all 7 days.
+```
+
+This text does not perform the evaluation.
+
+## `requirements`
+
+Machine-readable rules evaluated by:
 
 ```text
-requirement_text
+app/achievements.py
 ```
-
-and:
-
-```text
-requirements
-```
-
-`requirement_text` is only for display in the Trophy Room.
-
-`requirements` contains the machine-readable rules used by the application.
 
 ---
 
 # Supported achievement requirements
 
-The current achievement engine supports several rule types.
-
-## Required quests every day
-
-Example:
-
-```yaml
-requirements:
-  required_quests_every_day:
-    - vitamins
-    - eggs
-    - kwark
-```
-
-Every listed quest must be completed on all seven days of the selected week.
+The evaluator supports both older quest-specific rules and newer semantic rules.
 
 ---
 
-## Minimum workout days
-
-Example:
+## Required quests every day
 
 ```yaml
 requirements:
-  minimum_workout_days: 5
+
+  required_quests_every_day:
+    - reading
 ```
 
-At least one workout-category quest must be completed on five distinct days.
+Every listed quest must be completed on every day of the ISO week.
 
-Multiple workouts on the same day still count as one workout day.
+This rule remains supported for backwards compatibility.
 
 ---
 
 ## Minimum days per quest
 
-Example:
-
 ```yaml
 requirements:
+
   minimum_days_per_quest:
-    gym_push: 1
-    gym_pull: 1
-    gym_legs: 1
+    reading: 7
 ```
 
-Each specified quest must appear on at least the specified number of days during the week.
+The specified quest must appear on at least the given number of distinct days.
+
+This is appropriate for permanent/core tasks.
 
 ---
 
-## Minimum days with any quest from a group
-
-Example:
+## Minimum workout days
 
 ```yaml
 requirements:
+
+  minimum_workout_days: 5
+```
+
+At least one `workout` category quest must be completed on five distinct days.
+
+This is retained as a legacy convenience rule.
+
+Equivalent newer logic can be represented as:
+
+```yaml
+requirements:
+
+  minimum_category_days:
+    workout: 5
+```
+
+---
+
+## Minimum category days
+
+```yaml
+requirements:
+
+  minimum_category_days:
+    daily: 7
+    nutrition: 7
+    workout: 4
+```
+
+For each listed category, at least one task from that category must be completed on the required number of distinct days.
+
+For example:
+
+```yaml
+daily: 7
+```
+
+means:
+
+> complete at least one Daily-category quest on every day of the week
+
+It does **not** mean that every active Daily quest has to be completed.
+
+This is intentionally independent of the specific quest catalog.
+
+---
+
+## Minimum workout type days
+
+```yaml
+requirements:
+
+  minimum_workout_type_days:
+    strength: 3
+    cardio: 2
+```
+
+This counts distinct days on which at least one matching workout subtype was completed.
+
+A task counts toward:
+
+```text
+strength
+```
+
+when its definition contains:
+
+```yaml
+category: workout
+workout_type: strength
+```
+
+A task counts toward:
+
+```text
+cardio
+```
+
+when it contains:
+
+```yaml
+category: workout
+workout_type: cardio
+```
+
+This works for both built-in and user-created tasks.
+
+---
+
+## Minimum days with any quest from a set
+
+```yaml
+requirements:
+
   minimum_days_with_any_quest:
     quest_ids:
       - jogging
@@ -1129,149 +1409,429 @@ requirements:
     days: 3
 ```
 
-At least one of the listed quests must be completed on three distinct days.
+At least one quest from the specified group must appear on the required number of distinct days.
+
+This remains available for special achievements.
 
 ---
 
-# Achievement engine
+# Combining achievement rules
+
+Multiple rule types can be combined.
+
+Example:
+
+```yaml
+- id: the_standard
+  name: The Standard
+  description: An exceptional week across routine, nutrition, learning and physical training.
+  icon: "♛"
+
+  requirement_text:
+    - Complete Reading on all 7 days.
+    - Complete at least one Daily task on all 7 days.
+    - Complete at least one Nutrition task on all 7 days.
+    - Complete Strength workouts on at least 3 different days.
+    - Complete Cardio workouts on at least 2 different days.
+
+  requirements:
+
+    minimum_days_per_quest:
+      reading: 7
+
+    minimum_category_days:
+      daily: 7
+      nutrition: 7
+
+    minimum_workout_type_days:
+      strength: 3
+      cardio: 2
+```
+
+All configured requirements must pass.
+
+---
+
+# Achievement evaluation
 
 ## `app/achievements.py`
 
-This file:
+The achievement engine:
 
-- loads `configuration/achievements.yaml`
-- fetches quest logs for a given ISO week
-- groups logs by date
-- evaluates each achievement's requirements
-- records newly earned trophies in SQLite
-- prevents duplicate trophies for the same week
+1. loads `achievements.yaml`
+2. loads quest definitions
+3. loads quest logs for an ISO week
+4. groups logs by date
+5. groups quest IDs by category
+6. groups workout IDs by workout type
+7. evaluates all configured requirements
+8. stores newly earned trophies
 
-Achievements are evaluated for completed historical weeks.
+Category-based trophies automatically recognize user-created tasks because the evaluator uses the shared quest catalog.
 
-The Trophy Room shows both:
+For example:
 
-- unlocked trophies
-- locked trophies
+```yaml
+- id: swimming
+  category: workout
+  workout_type: cardio
+```
 
-Unlocked trophies also show every week in which the achievement was earned.
+automatically contributes toward cardio trophies.
+
+No achievement definition needs to know the ID `swimming`.
 
 ---
 
 # Trophy permanence
 
-Once a trophy is inserted into the `trophies` table, it is intended to act as a permanent historical record.
-
-This is different from XP calculations.
+Once a trophy is inserted into SQLite, it is permanent.
 
 For example:
 
 ```text
-Perfect Week
-Week 37, 2026
+Bookworm
+Week 37 · 2026
 ```
 
-represents the fact that the requirements were satisfied for that week when the trophy was awarded.
+records the fact that the achievement was earned for that week.
 
-The trophy is not intended to disappear simply because the configuration changes later.
+Changing the current YAML later does not automatically revoke existing trophy rows.
+
+This is intentional.
+
+---
+
+# Historical achievement caveat
+
+Generic achievement evaluation needs the current quest definition in order to know a historical quest's category or workout type.
+
+Therefore, when removing a shared custom quest from:
+
+```text
+user-quests.yaml
+```
+
+the administrator should be aware that historical, not-yet-awarded achievement evaluation can no longer infer that quest's category from the catalog.
+
+Already-earned trophies remain unaffected because trophies are stored permanently in SQLite.
+
+Preserving quest definitions is therefore preferable when historical evaluation matters.
+
+---
+
+# Quest loader
+
+## `app/quests.py`
+
+The quest loader reads both:
+
+```text
+configuration/quests.yaml
+configuration/user-quests.yaml
+```
+
+Conceptually:
+
+```python
+load_quests()
+```
+
+returns the combined shared catalog.
+
+Other responsibilities include:
+
+- retrieving a quest by ID
+- reading personal active-state overrides
+- resolving current quest state
+- writing user-created quests
+- generating IDs for custom tasks
+- safely updating `user-quests.yaml`
+
+---
+
+# Custom quest writes
+
+`user-quests.yaml` is mutable runtime configuration.
+
+Writes use:
+
+- a temporary file
+- atomic replacement
+- a lock
+
+This helps prevent two gmfi containers from writing the shared task catalog simultaneously.
+
+The lock lives inside the shared configuration directory.
+
+---
+
+# Task Glossary
+
+## `GET /glossary`
+
+The Task Glossary displays the complete shared quest catalog.
+
+It includes:
+
+- built-in tasks
+- user-created tasks
+- active tasks
+- inactive tasks
+- category
+- workout type where applicable
+- description
+- measurement configuration
+- base XP
+- XP scaling
+- historical completions
+- lifetime global XP
+- historical skill XP contribution
+- creator information for user-created quests
+
+Inactive quests remain visible but are visually muted.
+
+---
+
+# Task activation
+
+Each glossary card includes an action to:
+
+```text
+Activate
+```
+
+or:
+
+```text
+Deactivate
+```
+
+This modifies only the current user's `quest_states` table.
+
+It does not modify the shared quest YAML.
+
+---
+
+# Adding tasks through the Glossary
+
+The Task Glossary includes:
+
+```text
++ Add task
+```
+
+The task creation form supports:
+
+- name
+- description
+- category
+- workout type for workout quests
+- base XP
+- optional measurement
+- measurement label
+- measurement unit
+- minimum
+- step
+- optional global XP scaling
+- maximum rewarded units
+- base skill XP
+- per-unit skill XP
+
+A task is added to the shared catalog immediately after successful validation.
+
+---
+
+# Custom workout creation
+
+If:
+
+```text
+Category = Workout
+```
+
+the form additionally requires:
+
+```text
+Workout type
+```
+
+with:
+
+```text
+Strength
+Cardio
+```
+
+Examples:
+
+```yaml
+name: Calisthenics
+category: workout
+workout_type: strength
+```
+
+and:
+
+```yaml
+name: Swimming
+category: workout
+workout_type: cardio
+```
+
+These tasks automatically work with type-based trophy rules.
 
 ---
 
 # Routes
 
-## `app/routes.py`
-
-This file connects HTTP requests to application logic.
-
-Current main routes include:
+Most main application routes currently live in:
 
 ```text
-GET  /
-GET  /character
-GET  /week
-GET  /trophies
-POST /quest/<quest_id>/toggle
+app/routes.py
+```
+
+Task Glossary routes have been split into:
+
+```text
+app/glossary_routes.py
+```
+
+This is the beginning of gradually reducing the size of `routes.py`.
+
+A possible future structure is:
+
+```text
+app/routes/
+├── __init__.py
+├── today.py
+├── character.py
+├── week.py
+├── trophies.py
+├── glossary.py
+└── quests.py
+```
+
+This refactor is not required for current functionality.
+
+---
+
+# Current pages
+
+The main navigation contains five pages.
+
+```text
+Today
+Character
+Week
+Trophy Room
+Task Glossary
 ```
 
 ---
 
-# Today page
+# Today
 
 ## `GET /`
 
-The Today page:
+Today is the primary interaction page.
 
-- loads active quests
-- loads today's completion records
-- separates quests by category
-- shows daily quests
-- shows nutrition quests
-- shows workout quests
-- displays today's XP
-- allows quests to be completed or undone
+It shows active quests grouped into:
 
-Measured quests initially appear in the same compact style as normal quests.
+```text
+Daily
+Nutrition
+Workout
+```
 
-Clicking the plus button expands the quest and reveals the measurement input.
+The page supports:
+
+- normal quest completion
+- measurable quest entry
+- undoing completions
+- today's XP
+- compact quest cards
+
+A quest can only be completed once on the current date.
+
+---
+
+# Character
+
+## `GET /character`
+
+The Character page shows:
+
+- character level
+- character title
+- global XP
+- progress toward the next level
+- skills
+- skill levels
+- skill titles
+- overall rank
+
+Progression is calculated from stored historical quest rewards.
+
+---
+
+# Week
+
+## `GET /week`
+
+The Week page uses ISO weeks.
 
 Example:
 
 ```text
-Reading
-+
+/week?year=2026&week=37
 ```
 
-becomes:
+A selected week runs:
 
 ```text
-Reading
-
-Pages
-[ 24 ]
-
-[Complete]
+Monday -> Sunday
 ```
 
-after expansion.
+The page shows:
+
+- all active quests
+- Monday through Sunday
+- completion state
+- measurements
+- weekly XP
+- category groups
+- historical editing
+- future-date disabled states
+- a compact XP history chart
 
 ---
 
-# Quest toggle route
+# Week grouping
 
-## `POST /quest/<quest_id>/toggle`
+The Week table groups tasks based on quest category.
 
-This route handles both completing and undoing quests.
+Current order:
 
-When a quest is not yet completed:
+```text
+Daily
+Nutrition
+Workout
+```
 
-1. load the quest definition
-2. validate that it exists
-3. validate that it is active
-4. validate the selected date
-5. reject future dates
-6. validate required measurements
-7. calculate XP
-8. calculate skill XP
-9. insert a `quest_logs` row
+The grouping is category-driven rather than determined by the physical order of quests inside the YAML files.
 
-When the same quest already exists for that date:
-
-1. find the existing row
-2. delete it
-3. return to the previous page
-
-Because of the database uniqueness constraint, the same quest cannot be logged twice on the same day.
+This ensures user-created Daily tasks appear alongside other Daily tasks instead of simply appearing at the bottom.
 
 ---
 
 # Historical editing
 
-The Week page allows old days to be corrected.
+The Week page allows previous days to be corrected.
 
-This is useful when a task was completed but not entered at the time.
+A historical completion uses the same quest completion route but sends a specific date.
 
-The same quest toggle route is used.
-
-The only difference is that the Week page sends a specific date:
+Example:
 
 ```html
 <input
@@ -1281,99 +1841,44 @@ The only difference is that the Week page sends a specific date:
 >
 ```
 
-The backend validates the date and rejects future entries.
+Future dates are rejected.
 
-Historical completions earn the XP configured at the moment they are entered.
+Historical entries receive the reward configuration that exists at the time the historical entry is actually logged.
 
----
-
-# Character page
-
-## `GET /character`
-
-The Character page calculates progression from all stored logs.
-
-It:
-
-- sums all stored global XP
-- parses all stored skill XP JSON
-- calculates character level
-- determines character title
-- calculates each skill level
-- determines skill titles
-- calculates overall rank
-
-Character progression is calculated dynamically from historical logs.
-
-Character levels themselves are not stored separately in SQLite.
+Once stored, those rewards become historical snapshots.
 
 ---
 
-# Week page
+# Weekly XP chart
 
-## `GET /week`
+The Week page contains a compact bar chart showing XP earned across the previous ten weeks relative to the selected week.
 
-The Week page uses ISO week numbering.
+The chart is intentionally subtle:
 
-Example:
+- ten bars
+- gmfi accent green
+- week number underneath
+- selected week highlighted
+- XP/details available through hover
+- no external charting dependency
+
+The chart uses stored:
 
 ```text
-/week?year=2026&week=37
+quest_logs.xp_earned
 ```
 
-The selected week is converted to a Monday-Sunday date range.
+so it reflects historical earned XP rather than recalculating quest rewards.
+
+When viewing an older week, the chart follows that selected week.
 
 For example:
 
 ```text
-Week 37
-September 7 - September 13 · 2026
+selected week = 37
+
+chart = weeks 28 through 37
 ```
-
-The page shows:
-
-- all active quests
-- Monday through Sunday
-- completed quests
-- measured values where applicable
-- weekly XP
-- category grouping
-- historical editing
-
-Categories are grouped visually rather than displayed as one long undifferentiated list.
-
-Typical groups are:
-
-```text
-Daily
-Nutrition
-Workout
-```
-
----
-
-# ISO weeks
-
-gmfi uses ISO-8601 week numbering.
-
-ISO weeks:
-
-- start on Monday
-- end on Sunday
-- are numbered from 1 to 52 or 53
-- have an ISO year that can occasionally differ from the calendar year near New Year's Day
-
-The application uses:
-
-```python
-date.fromisocalendar(
-    year,
-    week,
-    weekday,
-)
-```
-
-to determine the real dates for a selected week.
 
 ---
 
@@ -1381,25 +1886,22 @@ to determine the real dates for a selected week.
 
 ## `GET /trophies`
 
-The Trophy Room loads every achievement definition, regardless of whether it has ever been earned.
+The Trophy Room displays every configured achievement.
 
-Locked achievements remain visible.
+Locked trophies remain visible.
 
-A locked trophy shows:
+Each trophy can show:
 
+- icon
 - name
 - description
-- icon
-- completion requirements
-- locked state
-
-Unlocked trophies additionally show:
-
+- requirements
+- locked/unlocked state
 - number of times earned
-- all completed weeks
+- historical earning weeks
 - links back to those weeks
 
-This makes achievements discoverable before they are unlocked.
+This makes achievements discoverable before they are earned.
 
 ---
 
@@ -1415,18 +1917,14 @@ templates/
 
 ## `templates/base.html`
 
-Shared application layout.
+Contains shared application layout:
 
-Contains:
-
-- HTML document structure
-- gmfi branding
+- document structure
+- gmfi logo
 - date
 - navigation
-- shared CSS import
-- Jinja content block
-
-All main pages extend this template.
+- stylesheet
+- shared content block
 
 ---
 
@@ -1434,44 +1932,28 @@ All main pages extend this template.
 
 Renders the Today page.
 
-Contains:
-
-- daily quest section
-- nutrition section
-- workout section
-- JavaScript for expandable measurable quests
+Uses the shared quest-card partial.
 
 ---
 
 ## `templates/partials/quest_card.html`
 
-Shared quest card markup.
+Handles:
 
-This avoids duplicating quest UI code across categories.
-
-The partial handles:
-
-- normal quests
-- measurable quests
+- normal tasks
+- measurable tasks
 - completed state
 - XP display
 - measurement display
-- expand/collapse behavior
+- expansion
+- collapse
 - undo behavior
 
 ---
 
 ## `templates/character.html`
 
-Renders:
-
-- character level
-- character title
-- rank
-- total XP
-- skill cards
-- skill progress bars
-- skill titles
+Renders character and skill progression.
 
 ---
 
@@ -1483,10 +1965,11 @@ Renders:
 - ISO week selector
 - date range
 - weekly XP
+- ten-week XP history chart
 - grouped weekly quest table
 - editable historical cells
-- measured historical quest input
-- future-date disabled state
+- measurement input
+- future-date state
 
 ---
 
@@ -1494,12 +1977,25 @@ Renders:
 
 Renders:
 
-- all trophy definitions
-- locked state
-- unlocked state
+- locked trophies
+- unlocked trophies
 - trophy requirements
-- number of times earned
-- historical completed weeks
+- earning history
+- links to completed weeks
+
+---
+
+## `templates/glossary.html`
+
+Renders:
+
+- shared task catalog
+- per-user activation state
+- task statistics
+- workout subtype
+- task creation form
+- measurement configuration
+- skill reward configuration
 
 ---
 
@@ -1507,27 +2003,11 @@ Renders:
 
 ## `static/style.css`
 
-All application styling currently lives in one CSS file.
+gmfi currently uses one main CSS file.
 
-Major sections include:
+The UI is intentionally dark and minimal.
 
-```text
-Global variables
-Header
-Navigation
-Panels
-XP bars
-Quest cards
-Measured quest expansion
-Character stats
-Week table
-Week editor
-Week selector
-Trophy room
-Responsive layout
-```
-
-The CSS uses variables defined near the top:
+Core variables:
 
 ```css
 :root {
@@ -1547,7 +2027,50 @@ The CSS uses variables defined near the top:
 }
 ```
 
-Changing these variables is the easiest way to adjust the overall theme.
+Major styling areas include:
+
+```text
+Header
+Navigation
+Panels
+Quest cards
+Measured quest expansion
+Character progression
+Week table
+Week editor
+Week XP history
+Trophy Room
+Task Glossary
+Task creator
+Responsive layout
+```
+
+---
+
+# Logo and icons
+
+The header uses:
+
+```text
+static/gmfi-logo.png
+```
+
+The intended header version has a transparent background so it appears as a logo rather than as an app-icon tile.
+
+The iOS Home Screen icon is separate:
+
+```text
+static/gmfi-touch-icon.png
+```
+
+The touch icon should remain:
+
+- square
+- opaque
+- full-bleed
+- suitable for iOS icon masking
+
+This separation allows the web header logo to be transparent without compromising the Home Screen icon.
 
 ---
 
@@ -1555,50 +2078,60 @@ Changing these variables is the easiest way to adjust the overall theme.
 
 ## `app/timeutils.py`
 
-gmfi does not rely directly on the operating system's local date.
+gmfi should not depend on whatever timezone the operating system or container happens to use.
 
-Instead, the application timezone is read from:
+Timezone configuration supports:
 
-```env
-TZ=
+```text
+TZ
 ```
 
-Example:
+and:
 
-```env
-TZ=Europe/Amsterdam
+```text
+TIMEZONE
 ```
 
-The helper exposes functions such as:
+with a fallback of:
+
+```text
+Europe/Amsterdam
+```
+
+Conceptually:
+
+```python
+TIMEZONE_NAME = (
+    os.getenv("TZ")
+    or os.getenv("TIMEZONE")
+    or "Europe/Amsterdam"
+)
+```
+
+Helpers include:
 
 ```python
 now_local()
 today_local()
 ```
 
-These functions ensure that:
-
-- quest dates roll over at the intended local midnight
-- historical entries use the correct date
-- Docker host timezone differences do not affect gmfi behavior
+These functions are used for local date handling.
 
 ---
 
 # Why `tzdata` is installed
 
-Python's `zoneinfo` module uses the IANA timezone database.
+Python's `zoneinfo` module requires timezone data.
 
-Linux environments usually provide timezone data through the OS.
+Windows may not provide the same IANA timezone data available on Linux.
 
-Windows environments may not.
-
-The `tzdata` package is therefore included in `requirements.txt` so timezones such as:
+Installing:
 
 ```text
-Europe/Amsterdam
+tzdata
 ```
 
-work consistently across:
+keeps timezone handling consistent across:
 
 - Windows development
 - Linux
@@ -1606,35 +2139,387 @@ work consistently across:
 
 ---
 
+# Multi-user model
+
+gmfi does not currently implement application-level accounts or login sessions.
+
+Instead, each person runs a separate container.
+
+For example:
+
+```text
+gmfi_bram
+gmfi_wouter
+```
+
+Both containers use the same application code and configuration catalog.
+
+Each container has its own:
+
+```text
+/app/data/gmfi.db
+```
+
+The result is:
+
+```text
+shared:
+    application code
+    built-in quest catalog
+    custom quest catalog
+    progression rules
+    trophy rules
+
+separate:
+    quest logs
+    measurements
+    XP
+    skill XP
+    active task choices
+    trophies
+```
+
+---
+
+# `GMFI_USER`
+
+Each container receives:
+
+```text
+GMFI_USER
+```
+
+Example:
+
+```yaml
+environment:
+  GMFI_USER: bram
+```
+
+or:
+
+```yaml
+environment:
+  GMFI_USER: wouter
+```
+
+This is used when recording the creator of shared custom quests.
+
+It is not an authentication mechanism.
+
+---
+
 # Environment variables
 
-The project expects a root-level:
-
-```text
-.env
-```
-
-At minimum:
+A production `.env` may contain values such as:
 
 ```env
-TZ=Europe/Amsterdam
+COMPOSE_PROJECT_NAME=gmfi
+
+USER_1=bram
+USER_2=wouter
+
+TAILSCALE_IP=100.x.x.x
+
+PORT_1=8050
+PORT_2=8051
+
+TIMEZONE=Europe/Amsterdam
 ```
 
-The `.env` file should not be committed.
+Exact host ports are deployment-specific.
 
-Add it to:
+The important distinction is:
 
 ```text
-.gitignore
+host port -> container port 8050
 ```
+
+The `.env` file should never be committed.
+
+---
+
+# Docker
+
+gmfi runs in production using Docker and Gunicorn.
+
+The current application/container port is:
+
+```text
+8050
+```
+
+Gunicorn serves:
+
+```text
+main:app
+```
+
+on port:
+
+```text
+8050
+```
+
+Do not confuse the Flask development server configuration with the production Gunicorn process.
+
+Both currently use port `8050`, but they are still separate server processes.
+
+---
+
+# Production Docker Compose
+
+The server uses one service per user.
+
+Conceptually:
+
+```yaml
+services:
+
+  gmfi-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: ${COMPOSE_PROJECT_NAME}_${USER_1}
+
+    restart: unless-stopped
+
+    ports:
+      - "${TAILSCALE_IP}:${PORT_1}:8050"
+
+    env_file:
+      - .env
+
+    environment:
+      GMFI_USER: ${USER_1}
+
+    volumes:
+      - ./data_${USER_1}:/app/data
+      - ./configuration:/app/configuration
+
+
+  gmfi-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: ${COMPOSE_PROJECT_NAME}_${USER_2}
+
+    restart: unless-stopped
+
+    ports:
+      - "${TAILSCALE_IP}:${PORT_2}:8050"
+
+    env_file:
+      - .env
+
+    environment:
+      GMFI_USER: ${USER_2}
+
+    volumes:
+      - ./data_${USER_2}:/app/data
+      - ./configuration:/app/configuration
+```
+
+The configuration bind mount is important because:
+
+```text
+configuration/user-quests.yaml
+```
+
+is mutable runtime state shared by both containers.
+
+---
+
+# Compose validation
+
+Before starting production containers, the resolved Compose configuration can be checked with:
+
+```bash
+docker compose config
+```
+
+This is especially useful when using environment-variable substitutions.
+
+---
+
+# Persistent data
+
+Per-user databases live on the host.
+
+Example:
+
+```text
+data_bram/gmfi.db
+data_wouter/gmfi.db
+```
+
+These directories are bind-mounted into the corresponding container.
+
+Running:
+
+```bash
+docker compose down
+```
+
+does not delete these files.
+
+Running:
+
+```bash
+docker compose up -d --build
+```
+
+does not delete these files.
+
+Replacing the application image does not delete them.
+
+Deleting a user's database file does delete that user's:
+
+- quest history
+- XP history
+- skill XP
+- active quest overrides
+- trophy history
+
+---
+
+# Shared mutable configuration
+
+The production Compose file bind-mounts:
+
+```text
+./configuration:/app/configuration
+```
+
+This is required because custom quests are written at runtime.
+
+Therefore:
+
+```text
+user-quests.yaml
+```
+
+persists independently of the Docker image.
+
+Built-in YAML files also become visible through this mount.
+
+---
+
+# Recommended backups
+
+At minimum, back up:
+
+```text
+data_bram/gmfi.db
+data_wouter/gmfi.db
+configuration/user-quests.yaml
+```
+
+The first two contain personal progress.
+
+The third contains the runtime-created shared task catalog.
+
+Example:
+
+```bash
+cp data_bram/gmfi.db data_bram/gmfi-backup.db
+```
+
+and:
+
+```bash
+cp configuration/user-quests.yaml configuration/user-quests-backup.yaml
+```
+
+For serious long-term use, automated backups should eventually be added.
+
+---
+
+# `.gitignore`
+
+Important exclusions include:
+
+```gitignore
+.venv/
+.env
+
+data/
+data_*/
+
+__pycache__/
+*.pyc
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+docker-compose.yml
+configuration/user-quests.yaml
+```
+
+The following must not be committed:
+
+- `.env`
+- user databases
+- server-only Compose configuration
+- runtime `user-quests.yaml`
+- API keys
+- Tailscale auth keys
+- passwords
+- SSH keys
+
+---
+
+# Why `user-quests.yaml` is ignored
+
+`quests.yaml` is administrator-maintained source configuration.
+
+It belongs in Git.
+
+`user-quests.yaml` is mutable runtime state.
+
+It can be changed by users through the application.
+
+Therefore:
+
+```text
+quests.yaml       -> tracked
+user-quests.yaml  -> ignored
+```
+
+This avoids Git conflicts with runtime-generated content.
+
+---
+
+# Server Compose file
+
+The production:
+
+```text
+docker-compose.yml
+```
+
+is also intentionally ignored by Git.
+
+This allows server-specific values and deployment structure to remain private.
+
+If it was previously tracked, remove it from Git tracking once with:
+
+```bash
+git rm --cached docker-compose.yml
+```
+
+The file itself remains on disk.
 
 ---
 
 # Local development
 
-## Requirements
-
-Recommended:
+Recommended environment:
 
 ```text
 Python 3.13+
@@ -1642,291 +2527,47 @@ Python 3.13+
 
 Create a virtual environment:
 
-```bash
+```powershell
 python -m venv .venv
 ```
 
-### Windows PowerShell
-
-Activate:
+Activate it in PowerShell:
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
 
-### Linux / macOS
-
-Activate:
-
-```bash
-source .venv/bin/activate
-```
-
 Install dependencies:
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 Run:
 
-```bash
+```powershell
 python main.py
 ```
 
 Open:
 
 ```text
-http://localhost:8014
+http://localhost:8050
 ```
 
 ---
 
-# Current Python dependencies
+# Production workflow
 
-The current environment uses:
-
-```text
-blinker==1.9.0
-click==8.5.0
-Flask==3.1.3
-gunicorn==23.0.0
-itsdangerous==2.2.0
-Jinja2==3.1.6
-MarkupSafe==3.0.3
-python-dotenv==1.2.3
-PyYAML==6.0.3
-tzdata==2026.3
-Werkzeug==3.1.8
-```
-
-Gunicorn is used only for production deployment inside Docker.
-
-The Flask development server is still used for:
+On the home server:
 
 ```bash
-python main.py
-```
-
----
-
-# Docker
-
-gmfi is designed to run through Docker Compose.
-
-The desired deployment workflow is:
-
-```bash
+cd ~/Docker/gmfi
 git pull
 docker compose up -d --build
 ```
 
----
-
-# Dockerfile
-
-The Dockerfile:
-
-1. starts from a Python base image
-2. sets `/app` as the working directory
-3. installs Python dependencies
-4. copies application files
-5. creates the data directory
-6. exposes port `8014`
-7. starts Gunicorn
-
-The production server runs:
-
-```text
-main:app
-```
-
-through Gunicorn.
-
----
-
-# Docker Compose
-
-`docker-compose.yml` defines the gmfi service.
-
-Typical configuration:
-
-```yaml
-services:
-  gmfi:
-    build:
-      context: .
-      dockerfile: Dockerfile
-
-    container_name: gmfi
-
-    restart: unless-stopped
-
-    ports:
-      - "8014:8014"
-
-    env_file:
-      - .env
-
-    volumes:
-      - ./data:/app/data
-```
-
-The important line for persistence is:
-
-```yaml
-volumes:
-  - ./data:/app/data
-```
-
-The SQLite database therefore lives outside the container lifecycle.
-
----
-
-# Persistent data
-
-The persistent database is:
-
-```text
-data/gmfi.db
-```
-
-Running:
-
-```bash
-docker compose down
-```
-
-does not delete it.
-
-Running:
-
-```bash
-docker compose up -d --build
-```
-
-does not delete it.
-
-Replacing the Docker image does not delete it.
-
-Deleting:
-
-```text
-data/gmfi.db
-```
-
-does delete all quest history and trophy data.
-
-Back up this file if progress matters.
-
----
-
-# Recommended backups
-
-At minimum, periodically copy:
-
-```text
-data/gmfi.db
-```
-
-Example:
-
-```bash
-cp data/gmfi.db data/gmfi-backup.db
-```
-
-For a dated backup:
-
-```bash
-cp data/gmfi.db "data/gmfi-$(date +%Y-%m-%d).db"
-```
-
-For more serious deployment use, automated SQLite backups may be added later.
-
----
-
-# `.dockerignore`
-
-The Docker build should ignore development-only and persistent files.
-
-Typical contents:
-
-```text
-.git
-.gitignore
-
-.venv
-venv
-
-__pycache__
-*.pyc
-*.pyo
-
-data
-*.db
-
-.env
-
-.vscode
-.idea
-```
-
-The `configuration/` directory should **not** be ignored.
-
-Those YAML files need to be copied into the image.
-
----
-
-# `.gitignore`
-
-Typical contents:
-
-```text
-.venv/
-.env
-data/
-__pycache__/
-*.pyc
-```
-
-The database is intentionally not committed.
-
-The YAML configuration files are intended to be committed.
-
----
-
-# Server deployment
-
-Clone:
-
-```bash
-git clone <repository-url>
-cd gmfi
-```
-
-Create:
-
-```text
-.env
-```
-
-Example:
-
-```env
-TZ=Europe/Amsterdam
-```
-
-Create the persistent data directory:
-
-```bash
-mkdir -p data
-```
-
-Build and start:
-
-```bash
-docker compose up -d --build
-```
+Or use the server's existing helper command where appropriate.
 
 Check status:
 
@@ -1934,169 +2575,96 @@ Check status:
 docker compose ps
 ```
 
-View logs:
+Inspect logs:
 
 ```bash
 docker compose logs -f
 ```
 
-Stop:
+Validate configuration:
 
 ```bash
-docker compose down
+docker compose config
 ```
-
----
-
-# Updating the server
-
-After pushing changes to Git:
-
-```bash
-cd gmfi
-git pull
-docker compose up -d --build
-```
-
-Because configuration files are currently copied into the Docker image, changes to:
-
-```text
-configuration/*.yaml
-```
-
-also require rebuilding the image.
-
-The database remains untouched because it is bind-mounted separately.
 
 ---
 
 # Tailscale access
 
-gmfi listens on:
+gmfi is intended to remain private.
+
+The application should be bound to the server's Tailscale address rather than publicly exposed.
+
+Conceptually:
 
 ```text
-8014
+Internet
+   X
+
+Tailnet
+   |
+   v
+
+Home server
+   |
+   +--> Bram gmfi
+   |
+   +--> Wouter gmfi
 ```
 
-If the server is connected to Tailscale, another device on the same Tailnet can access:
+Each user's host port can differ.
+
+For example:
 
 ```text
-http://<tailscale-ip>:8014
+http://100.x.x.x:8050
+http://100.x.x.x:8051
 ```
 
-Example:
+while both containers internally listen on:
 
 ```text
-http://100.x.x.x:8014
-```
-
-If Tailscale MagicDNS is enabled:
-
-```text
-http://<server-hostname>:8014
-```
-
-No public internet exposure is required.
-
----
-
-# Application data flow
-
-The general flow for completing a quest is:
-
-```text
-Browser
-   |
-   v
-POST /quest/<quest_id>/toggle
-   |
-   v
-app/routes.py
-   |
-   +--> load quest definition
-   |
-   +--> validate date
-   |
-   +--> validate measurement
-   |
-   v
-app/xp.py
-   |
-   +--> calculate global XP
-   |
-   +--> calculate skill XP
-   |
-   v
-app/db.py
-   |
-   v
-SQLite quest_logs
-```
-
-The Character page then performs:
-
-```text
-SQLite quest_logs
-   |
-   v
-sum global XP
-   |
-   v
-app/progression.py
-   |
-   +--> character level
-   +--> character title
-   +--> skill levels
-   +--> skill titles
-   +--> overall rank
+8050
 ```
 
 ---
 
-# Configuration data flow
+# Security
 
-Quest configuration:
+gmfi currently has no application-level authentication.
+
+That is intentional for the current private deployment model.
+
+Tailscale is the access boundary.
+
+Do **not** expose gmfi directly to the public internet without first adding proper authentication and appropriate production security controls.
+
+The public Git repository must not contain:
+
+```text
+.env
+SQLite databases
+Tailscale authentication keys
+API keys
+passwords
+SSH keys
+private server configuration
+user-quests.yaml
+```
+
+Note that quest configuration itself may reveal personal routines.
+
+Even non-secret YAML should therefore be reviewed before publication.
+
+---
+
+# Adding a built-in quest
+
+Add the quest to:
 
 ```text
 configuration/quests.yaml
-        |
-        v
-app/quests.py
-        |
-        v
-routes / XP engine / templates
 ```
-
-Progression configuration:
-
-```text
-configuration/progression.yaml
-        |
-        v
-app/progression.py
-        |
-        v
-character page
-```
-
-Achievement configuration:
-
-```text
-configuration/achievements.yaml
-        |
-        v
-app/achievements.py
-        |
-        v
-trophies table
-        |
-        v
-trophy room
-```
-
----
-
-# Adding a new simple quest
 
 Example:
 
@@ -2105,7 +2673,7 @@ Example:
   name: Meditate
   category: daily
   description: Complete a meditation session
-  active: true
+  active: false
 
   xp:
     base: 10
@@ -2118,22 +2686,50 @@ Example:
         base: 2
 ```
 
-Restart the development app or rebuild Docker.
+Remember:
 
-No database migration is required.
+```yaml
+active: false
+```
+
+means inactive **by default for fresh users**.
+
+It does not forcibly deactivate the quest for existing users with database overrides.
 
 ---
 
-# Adding a new measurable quest
-
-Example:
+# Adding a strength workout
 
 ```yaml
-- id: skating
-  name: Skating
+- id: gym_upper
+  name: Upper Body
   category: workout
-  description: Complete a skating session
-  active: true
+  workout_type: strength
+  description: Complete an upper-body training session
+  active: false
+
+  measurement:
+    type: sets
+    label: Sets
+    unit: sets
+    min: 1
+    step: 1
+
+  xp:
+    base: 10
+```
+
+---
+
+# Adding a cardio workout
+
+```yaml
+- id: rowing
+  name: Rowing
+  category: workout
+  workout_type: cardio
+  description: Complete a rowing session
+  active: false
 
   measurement:
     type: distance
@@ -2144,85 +2740,82 @@ Example:
 
   xp:
     base: 10
-
-    scaling:
-      per_unit: 2
-      max_units: 40
-
-    skills:
-      endurance:
-        base: 2
-        per_unit: 0.3
-
-      vitality:
-        base: 1
-        per_unit: 0.1
-
-      discipline:
-        base: 1
 ```
 
-The Today page should automatically render this as a compact quest.
+No achievement changes are required for generic cardio trophies.
 
-Clicking the plus button expands the measurement form.
+---
+
+# Adding a user task
+
+Normal users should generally use:
+
+```text
+Task Glossary -> + Add task
+```
+
+rather than editing `user-quests.yaml` manually.
+
+The UI handles:
+
+- ID generation
+- validation
+- duplicate detection
+- creator metadata
+- per-user activation
+- safe shared-catalog writing
 
 ---
 
 # Changing an existing quest
 
-These fields are generally safe to modify:
+Usually safe to modify:
 
 ```text
 name
 description
-active
 XP values
 measurement labels
 measurement caps
 skill rewards
 ```
 
-Be more careful with:
+Use more care with:
 
 ```text
 id
 category
+workout_type
 measurement structure
 ```
 
-The `id` is particularly important because historical database rows use it.
+Changing category or workout type affects how future or retrospectively evaluated trophies classify that quest.
+
+The quest ID is especially important because SQLite rows use it directly.
 
 ---
 
-# Retiring a quest
+# Retiring a built-in quest
 
-Do this:
+Because activation is now personal, `active` is primarily a default-state field rather than a global on/off switch.
+
+To make an old built-in task inactive for fresh users:
 
 ```yaml
 active: false
 ```
 
-Do not delete it unless you are deliberately abandoning historical linkage.
+Existing users who already have a personal `quest_states` override keep their personal setting.
 
-Example:
+Historical logs remain untouched.
 
-```yaml
-- id: gym_push
-  name: Push
-  category: workout
-  description: Legacy push workout
-  active: false
-```
-
-Historical logs remain in SQLite.
-
-Historical XP remains valid because rewards were stored when the quest was completed.
+If the quest has important history, preserving its definition is generally safer than removing it completely.
 
 ---
 
 # Changing a gym split
 
-Suppose the current split is:
+Suppose the built-in strength program changes from:
 
 ```text
 Push
@@ -2230,67 +2823,112 @@ Pull
 Legs
 ```
 
-and it changes to:
+to:
 
 ```text
 Upper
 Lower
 ```
 
-Retire:
+New quests can be added:
 
 ```yaml
-gym_push
-gym_pull
-gym_legs
+- id: gym_upper
+  category: workout
+  workout_type: strength
+
+- id: gym_lower
+  category: workout
+  workout_type: strength
 ```
 
-using:
+Old quest IDs should not be reused for unrelated activities.
+
+The generic Strength trophies continue to work because they care about:
 
 ```yaml
-active: false
+workout_type: strength
 ```
 
-Then add:
+rather than requiring Push/Pull/Legs specifically.
 
-```yaml
-gym_upper
-gym_lower
-```
-
-with new permanent IDs.
-
-This preserves old PPL history while starting a clean history for the new training structure.
+This is one of the primary reasons workout subtypes exist.
 
 ---
 
 # Adding a trophy
 
-Most trophies can be added through `configuration/achievements.yaml`.
+Most new trophies can now be created entirely through:
+
+```text
+configuration/achievements.yaml
+```
 
 Example:
 
 ```yaml
-- id: endurance_week
-  name: Endurance Week
-  description: Complete cardio on four different days.
-  icon: "▲"
+- id: strength_week
+  name: Strength Week
+  description: Maintain a high strength-training frequency.
+  icon: "⚒"
 
   requirement_text:
-    - Jog or cycle on at least 4 different days.
+    - Complete Strength workouts on at least 4 different days.
 
   requirements:
-    minimum_days_with_any_quest:
-      quest_ids:
-        - jogging
-        - cycling
-
-      days: 4
+    minimum_workout_type_days:
+      strength: 4
 ```
 
-If the desired achievement can be represented using an existing supported requirement type, no Python changes are required.
+No Python changes are required because `minimum_workout_type_days` already exists.
 
-If a completely new requirement type is needed, `app/achievements.py` must be extended.
+---
+
+# Category-based trophy example
+
+```yaml
+- id: balanced
+  name: Balanced
+  description: Maintain your routine, nutrition and training throughout the week.
+  icon: "◆"
+
+  requirement_text:
+    - Complete a Daily task on all 7 days.
+    - Complete a Nutrition task on all 7 days.
+    - Complete a Workout on at least 4 different days.
+
+  requirements:
+    minimum_category_days:
+      daily: 7
+      nutrition: 7
+      workout: 4
+```
+
+This remains valid even if the specific active tasks change.
+
+---
+
+# Core-task trophy example
+
+Some trophies intentionally use a stable quest ID.
+
+Example:
+
+```yaml
+- id: bookworm
+  name: Bookworm
+  description: Read every day for an entire week.
+  icon: "▤"
+
+  requirement_text:
+    - Complete Reading on all 7 days.
+
+  requirements:
+    minimum_days_per_quest:
+      reading: 7
+```
+
+This is appropriate because Reading is considered a core gmfi task.
 
 ---
 
@@ -2298,9 +2936,7 @@ If a completely new requirement type is needed, `app/achievements.py` must be ex
 
 ## Stable IDs
 
-Treat IDs as permanent.
-
-This applies to:
+Treat these as permanent:
 
 ```text
 quest IDs
@@ -2308,246 +2944,252 @@ achievement IDs
 skill IDs
 ```
 
-Human-facing names may change.
+Names may change.
 
-Machine-facing IDs should remain stable.
+IDs should generally not.
 
 ---
 
-## YAML defines current rules
+## Shared configuration, personal history
 
-YAML defines the current configuration.
+The shared catalog defines what tasks exist.
 
-Examples:
+The user's database defines what that user has done.
 
-```text
-current quest list
-current XP rewards
-current progression curve
-current achievement requirements
+Do not mix these concepts.
+
+---
+
+## `active` is a default
+
+In quest YAML:
+
+```yaml
+active: true
 ```
 
----
+does not mean:
 
-## SQLite records history
+> force this quest active
 
-SQLite stores what actually happened.
+It means:
 
-Examples:
-
-```text
-quest completion date
-measurement value
-XP earned
-skill XP earned
-trophies awarded
-```
+> default to active when the user has no personal override
 
 ---
 
-## Historical XP should not be recalculated
+## Historical XP is immutable
 
-Do not derive old XP from current quest configuration.
+Do not recalculate historical XP using current YAML.
 
-Historical XP is already stored in:
+Use:
 
 ```text
 quest_logs.xp_earned
 quest_logs.skill_xp_json
 ```
 
+Those values are historical snapshots.
+
+---
+
+## Trophies are permanent once awarded
+
+Changing achievement rules later does not automatically rewrite the trophy table.
+
 This is intentional.
 
 ---
 
-## Inactive is better than deleted
+## Category-based trophies should be preferred
 
-For anything that has historical data:
+For fluid routines, prefer:
 
 ```yaml
-active: false
+minimum_category_days:
 ```
 
-is safer than removal.
+or:
+
+```yaml
+minimum_workout_type_days:
+```
+
+over long hardcoded quest-ID lists.
+
+Use exact quest IDs only for intentionally permanent/core activities.
 
 ---
 
-# Development workflow
+## Shared quest deletion is administrative
 
-Typical local workflow:
+Users can deactivate tasks themselves.
 
-```bash
-git pull
-```
-
-Activate the virtual environment:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Run:
-
-```bash
-python main.py
-```
-
-Make changes.
-
-Test locally.
-
-Then:
-
-```bash
-git add .
-git commit -m "feat: describe change"
-git push
-```
+Removing a quest from the shared catalog is an administrator decision.
 
 ---
 
-# Production workflow
-
-On the home server:
-
-```bash
-cd gmfi
-git pull
-docker compose up -d --build
-```
-
-Inspect:
-
-```bash
-docker compose ps
-```
-
-Logs:
-
-```bash
-docker compose logs -f
-```
-
----
-
-# Current pages
-
-## Today
+# Data flow: quest completion
 
 ```text
-/
-```
+Browser
+   |
+   v
 
-Primary interaction page.
+POST quest completion
+   |
+   v
 
-Used to:
+app/routes.py
+   |
+   +--> load quest
+   |
+   +--> resolve active state
+   |
+   +--> validate date
+   |
+   +--> validate measurement
+   |
+   v
 
-- complete today's quests
-- enter measurable values
-- undo completions
-- see today's XP
+app/xp.py
+   |
+   +--> global XP
+   |
+   +--> skill XP
+   |
+   v
 
----
+app/db.py
+   |
+   v
 
-## Character
-
-```text
-/character
-```
-
-Used to view:
-
-- character level
-- title
-- global XP progress
-- skills
-- skill levels
-- skill titles
-- overall rank
-
----
-
-## Week
-
-```text
-/week
-```
-
-Used to view and correct historical weekly tracking.
-
-Supports:
-
-```text
-/week?year=2026&week=37
+SQLite quest_logs
 ```
 
 ---
 
-## Trophy Room
+# Data flow: character progression
 
 ```text
-/trophies
+SQLite quest_logs
+       |
+       v
+
+stored global XP
+stored skill XP
+       |
+       v
+
+app/progression.py
+       |
+       +--> character level
+       +--> character title
+       +--> skill levels
+       +--> skill titles
+       +--> overall rank
 ```
 
-Used to view:
+---
 
-- all achievement types
-- locked achievements
-- requirements
-- unlocked achievements
-- number of times earned
-- historical earning weeks
+# Data flow: quest catalog
+
+```text
+configuration/quests.yaml
+            |
+            |
+configuration/user-quests.yaml
+            |
+            v
+
+       app/quests.py
+            |
+            +--> shared quest catalog
+            |
+            +--> per-user quest_states
+            |
+            v
+
+      effective quest state
+            |
+            v
+
+Today / Week / Glossary / Achievements
+```
+
+---
+
+# Data flow: achievements
+
+```text
+configuration/achievements.yaml
+             |
+             v
+
+      app/achievements.py
+             |
+             +--> quest logs
+             |
+             +--> categories
+             |
+             +--> workout types
+             |
+             v
+
+      requirement evaluation
+             |
+             v
+
+          trophies
+             |
+             v
+
+        Trophy Room
+```
 
 ---
 
 # Current limitations
 
-gmfi is intentionally still lightweight.
+gmfi remains intentionally lightweight.
 
 Current limitations include:
 
-- single-user only
-- no authentication
-- no multi-user profiles
+- no application-level authentication
+- users are isolated through separate containers rather than app profiles
 - no API
-- no database migrations framework
+- no formal database migration framework
 - no automated backups
 - no quest scheduling beyond once-per-day behavior
-- no separate admin/configuration UI
-- no automatic YAML validation
-- no automatic trophy progress bars
-- no mobile application
-- no external fitness integrations
-- no Strava/Garmin/Apple Health integration
+- no administrator web interface for the shared catalog
+- no automatic YAML schema validation
+- no trophy progress bars
+- no native mobile application
+- no external fitness integration
+- no Strava integration
+- no Garmin integration
+- no Apple Health integration
+- no automatic conflict recovery for a stale custom-quest lock after an abnormal process crash
 
-For a private Tailscale deployment, several of these are intentional.
+Several of these are acceptable for the current private Tailscale deployment.
 
 ---
 
 # Possible future improvements
 
-Potential additions include:
+Potential future features include:
 
 ```text
 Streaks
 Daily streak bonuses
 Monthly achievements
 Annual achievements
-Quest prerequisites
-Quest difficulty
-Quest tags
-Skill trees
-Character classes
-Equipment
-Badges
+Achievement progress indicators
 Achievement rarity
-Trophy tiers
 Personal records
-Workout duration
 Workout notes
 Bodyweight tracking
 Sleep tracking
-Charts
 Heatmaps
 Quest statistics
 Weekly summaries
@@ -2556,55 +3198,38 @@ API endpoints
 Automated backups
 Import/export
 Strava integration
+Garmin integration
 Health platform integration
-User authentication
+Admin dashboard
+Shared-catalog moderation tools
+Formal database migrations
+YAML schema validation
+Route blueprints / route package refactor
 ```
-
----
-
-# Security
-
-gmfi currently assumes private access.
-
-The intended deployment model is:
-
-```text
-Internet
-   X
-
-Tailnet
-   |
-   v
-Home server
-   |
-   v
-gmfi:8014
-```
-
-Do not expose the application directly to the public internet without adding proper authentication and production security controls.
-
-Tailscale should act as the access boundary for the current deployment model.
 
 ---
 
 # Data ownership
 
-All persistent tracking data is stored locally in:
+Persistent personal data remains local.
+
+For example:
 
 ```text
-data/gmfi.db
+data_bram/gmfi.db
+data_wouter/gmfi.db
 ```
 
-All configurable application/game rules are stored locally in:
+Shared application configuration also remains local:
 
 ```text
 configuration/
 ```
 
-No cloud service is required for core functionality.
+No cloud service is required for core gmfi functionality.
 
 ---
 
 # License
 
-None as of yet!!!
+None as of yet.
