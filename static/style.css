@@ -1649,10 +1649,8 @@ h2 {
 
 .brand-logo {
     display: block;
-
-    width: 84px;
-    height: 84px;
-
+    width: 110px;
+    height: auto;
     object-fit: contain;
 }
 
