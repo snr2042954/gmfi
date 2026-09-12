@@ -1,3 +1,8 @@
+# IMPORTANT
+# active no longer tracks whetether a quest is active or not. It used to do that hence the name.
+# In current version however it tracks whether a quest is set to active upon fresh installation.
+# This is due to the fact that quests can now be activated or deactivated by the user from the UI.
+
 quests:
 
   # =========================
@@ -91,40 +96,6 @@ quests:
   # NUTRITION
   # =========================
 
-  - id: eggs
-    name: Eat 4 eggs
-    category: nutrition
-    description: Eat at least four eggs
-    active: true
-
-    xp:
-      base: 5
-
-      skills:
-        vitality:
-          base: 2
-
-        discipline:
-          base: 1
-
-
-  - id: kwark
-    name: Eat kwark
-    category: nutrition
-    description: Eat daily portion of kwark
-    active: true
-
-    xp:
-      base: 5
-
-      skills:
-        vitality:
-          base: 2
-
-        discipline:
-          base: 1
-
-
   - id: fruit
     name: Eat fruit
     category: nutrition
@@ -158,116 +129,41 @@ quests:
         discipline:
           base: 1
 
+  - id: eggs
+    name: Eat 4 eggs
+    category: nutrition
+    description: Eat at least four eggs
+    active: false
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
+
+
+  - id: kwark
+    name: Eat kwark
+    category: nutrition
+    description: Eat daily portion of kwark
+    active: false
+
+    xp:
+      base: 5
+
+      skills:
+        vitality:
+          base: 2
+
+        discipline:
+          base: 1
 
   # =========================
   # GYM
-  # =========================
-
-  - id: gym_push
-    name: Push
-    category: workout
-    description: Complete a push workout
-    active: true
-
-    measurement:
-      type: sets
-      label: Sets
-      unit: sets
-      min: 1
-      step: 1
-
-    xp:
-      base: 10
-
-      scaling:
-        per_unit: 2
-        max_units: 20
-
-      skills:
-        strength:
-          base: 2
-          per_unit: 0.3
-
-        vitality:
-          base: 1
-          per_unit: 0.1
-
-        discipline:
-          base: 1
-
-
-  - id: gym_pull
-    name: Pull
-    category: workout
-    description: Complete a pull workout
-    active: true
-
-    measurement:
-      type: sets
-      label: Sets
-      unit: sets
-      min: 1
-      step: 1
-
-    xp:
-      base: 10
-
-      scaling:
-        per_unit: 2
-        max_units: 20
-
-      skills:
-        strength:
-          base: 2
-          per_unit: 0.3
-
-        vitality:
-          base: 1
-          per_unit: 0.1
-
-        discipline:
-          base: 1
-
-
-  - id: gym_legs
-    name: Legs
-    category: workout
-    description: Complete a leg workout
-    active: true
-
-    measurement:
-      type: sets
-      label: Sets
-      unit: sets
-      min: 1
-      step: 1
-
-    xp:
-      base: 10
-
-      scaling:
-        per_unit: 2
-        max_units: 20
-
-      skills:
-        strength:
-          base: 2
-          per_unit: 0.3
-
-        endurance:
-          base: 1
-          per_unit: 0.1
-
-        vitality:
-          base: 1
-          per_unit: 0.1
-
-        discipline:
-          base: 1
-
-
-  # =========================
-  # CARDIO
   # =========================
 
   - id: jogging
@@ -302,12 +198,113 @@ quests:
         discipline:
           base: 1
 
+  - id: gym_push
+    name: Push
+    category: workout
+    description: Complete a push workout
+    active: false
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
+
+
+  - id: gym_pull
+    name: Pull
+    category: workout
+    description: Complete a pull workout
+    active: false
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
+
+
+  - id: gym_legs
+    name: Legs
+    category: workout
+    description: Complete a leg workout
+    active: false
+
+    measurement:
+      type: sets
+      label: Sets
+      unit: sets
+      min: 1
+      step: 1
+
+    xp:
+      base: 10
+
+      scaling:
+        per_unit: 2
+        max_units: 20
+
+      skills:
+        strength:
+          base: 2
+          per_unit: 0.3
+
+        endurance:
+          base: 1
+          per_unit: 0.1
+
+        vitality:
+          base: 1
+          per_unit: 0.1
+
+        discipline:
+          base: 1
 
   - id: cycling
     name: Cycling
     category: workout
     description: Complete a cycling session
-    active: true
+    active: false
 
     measurement:
       type: distance
@@ -334,38 +331,3 @@ quests:
 
         discipline:
           base: 1
-
-
-  # Example for later:
-  #
-  # - id: skating
-  #   name: Skating
-  #   category: workout
-  #   description: Complete a skating session
-  #   active: false
-  #
-  #   measurement:
-  #     type: distance
-  #     label: Distance
-  #     unit: km
-  #     min: 0.1
-  #     step: 0.1
-  #
-  #   xp:
-  #     base: 10
-  #
-  #     scaling:
-  #       per_unit: 2
-  #       max_units: 50
-  #
-  #     skills:
-  #       endurance:
-  #         base: 2
-  #         per_unit: 0.3
-  #
-  #       vitality:
-  #         base: 1
-  #         per_unit: 0.1
-  #
-  #       discipline:
-  #         base: 1

@@ -1655,3 +1655,286 @@ h2 {
 
     object-fit: contain;
 }
+
+/* ========================= */
+/* TASK GLOSSARY */
+/* ========================= */
+
+.glossary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+.glossary-card {
+    display: flex;
+    flex-direction: column;
+
+    gap: 16px;
+
+    padding: 18px;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--panel);
+
+    transition:
+        opacity 120ms ease,
+        border-color 120ms ease,
+        background 120ms ease;
+}
+
+
+.glossary-card:hover {
+    border-color: #3a3a40;
+}
+
+
+.glossary-card.inactive {
+    opacity: 0.46;
+}
+
+
+.glossary-card.inactive:hover {
+    opacity: 0.72;
+}
+
+
+.glossary-card-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    gap: 14px;
+}
+
+
+.glossary-card h2 {
+    margin: 3px 0 0;
+
+    font-size: 18px;
+}
+
+
+.glossary-category {
+    color: var(--muted);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+
+.glossary-status {
+    flex-shrink: 0;
+
+    padding: 4px 7px;
+
+    border: 1px solid var(--border);
+    border-radius: 999px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+}
+
+
+.glossary-status.active {
+    border-color: var(--accent-dark);
+
+    background: var(--accent-dark);
+
+    color: var(--accent);
+}
+
+
+.glossary-status.inactive {
+    color: var(--muted);
+}
+
+
+.glossary-description {
+    margin: 0;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+.glossary-config {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 6px;
+}
+
+
+.glossary-config span {
+    padding: 5px 7px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    background: var(--input);
+
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+.glossary-history {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+}
+
+
+.glossary-history > div {
+    padding: 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: var(--input);
+}
+
+
+.glossary-history strong {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 17px;
+}
+
+
+.glossary-history-label {
+    color: var(--muted);
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+
+.glossary-xp {
+    color: var(--accent);
+}
+
+
+.glossary-skill-section {
+    min-height: 54px;
+}
+
+
+.glossary-skills {
+    display: flex;
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-top: 8px;
+}
+
+
+.glossary-skill {
+    display: flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 6px 8px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: var(--input);
+
+    font-size: 10px;
+}
+
+
+.glossary-skill strong {
+    color: var(--text);
+}
+
+
+.glossary-skill span {
+    color: var(--accent);
+}
+
+
+.glossary-no-history {
+    margin-top: 8px;
+
+    font-size: 11px;
+}
+
+
+.glossary-action {
+    margin-top: auto;
+}
+
+
+.glossary-toggle {
+    width: 100%;
+
+    padding: 9px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+
+    font-size: 11px;
+}
+
+
+.glossary-toggle.activate {
+    border-color: var(--accent-dark);
+
+    color: var(--accent);
+}
+
+
+.glossary-toggle.activate:hover {
+    border-color: var(--accent);
+
+    background: var(--accent-dark);
+}
+
+
+.glossary-toggle.deactivate:hover {
+    color: var(--text);
+}
+
+
+@media (max-width: 800px) {
+
+    .glossary-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

@@ -28,16 +28,11 @@ def init_db():
             """
             CREATE TABLE IF NOT EXISTS quest_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-
                 quest_id TEXT NOT NULL,
-
                 completed_date TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-
                 measurement_value REAL,
-
                 xp_earned INTEGER NOT NULL,
-
                 skill_xp_json TEXT NOT NULL DEFAULT '{}',
 
                 UNIQUE(
@@ -47,14 +42,22 @@ def init_db():
             );
 
 
+            CREATE TABLE IF NOT EXISTS quest_states (
+                quest_id TEXT PRIMARY KEY,
+                active INTEGER NOT NULL,
+                updated_at TEXT NOT NULL,
+
+                CHECK (
+                    active IN (0, 1)
+                )
+            );
+
+
             CREATE TABLE IF NOT EXISTS trophies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-
                 achievement_id TEXT NOT NULL,
-
                 iso_year INTEGER NOT NULL,
                 iso_week INTEGER NOT NULL,
-
                 earned_at TEXT NOT NULL,
 
                 UNIQUE(
@@ -65,18 +68,15 @@ def init_db():
             );
 
 
-            CREATE INDEX IF NOT EXISTS
-            idx_quest_logs_completed_date
+            CREATE INDEX IF NOT EXISTS idx_quest_logs_completed_date
             ON quest_logs(completed_date);
 
 
-            CREATE INDEX IF NOT EXISTS
-            idx_quest_logs_quest_id
+            CREATE INDEX IF NOT EXISTS idx_quest_logs_quest_id
             ON quest_logs(quest_id);
 
 
-            CREATE INDEX IF NOT EXISTS
-            idx_trophies_week
+            CREATE INDEX IF NOT EXISTS idx_trophies_week
             ON trophies(
                 iso_year,
                 iso_week

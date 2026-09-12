@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}
+Task Glossary · gmfi
+{% endblock %}
+
+
+{% block content %}
+
+<section>
+
+    <div class="section-title">
+
+        <div>
+
+            <div class="eyebrow">
+                QUEST LIBRARY
+            </div>
+
+            <h1>
+                Task Glossary
+            </h1>
+
+            <div class="muted">
+                Manage the quests in your current routine.
+                Historical XP is preserved when a quest is inactive.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="glossary-grid">
+
+        {% for item in glossary %}
+
+            <article
+                class="
+                    glossary-card
+                    {% if not item.active %}
+                        inactive
+                    {% endif %}
+                "
+            >
+
+                <div class="glossary-card-header">
+
+                    <div>
+
+                        <div class="glossary-category">
+                            {{ item.quest.category }}
+                        </div>
+
+                        <h2>
+                            {{ item.quest.name }}
+                        </h2>
+
+                    </div>
+
+
+                    <span
+                        class="
+                            glossary-status
+                            {% if item.active %}
+                                active
+                            {% else %}
+                                inactive
+                            {% endif %}
+                        "
+                    >
+
+                        {% if item.active %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+
+                <p class="glossary-description">
+                    {{ item.quest.description }}
+                </p>
+
+
+                <div class="glossary-config">
+
+                    {% if item.quest.measurement %}
+
+                        <span>
+                            {{ item.quest.measurement.label }}
+                            ·
+                            {{ item.quest.measurement.unit }}
+                        </span>
+
+                    {% else %}
+
+                        <span>
+                            Completion
+                        </span>
+
+                    {% endif %}
+
+
+                    <span>
+                        +{{ item.quest.xp.base }} base XP
+                    </span>
+
+
+                    {% if item.quest.xp.scaling %}
+
+                        <span>
+
+                            +{{ item.quest.xp.scaling.per_unit }}
+
+                            XP /
+
+                            {% if item.quest.measurement %}
+                                {{ item.quest.measurement.unit }}
+                            {% else %}
+                                unit
+                            {% endif %}
+
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="glossary-history">
+
+                    <div>
+
+                        <span class="glossary-history-label">
+                            Completions
+                        </span>
+
+                        <strong>
+                            {{ item.completions }}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span class="glossary-history-label">
+                            Lifetime XP
+                        </span>
+
+                        <strong class="glossary-xp">
+                            +{{ item.total_xp }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="glossary-skill-section">
+
+                    <div class="glossary-history-label">
+                        Skill contribution
+                    </div>
+
+
+                    {% if item.skills %}
+
+                        <div class="glossary-skills">
+
+                            {% for skill in item.skills %}
+
+                                <div
+                                    class="glossary-skill"
+                                    title="{{ skill.name }}"
+                                >
+
+                                    <strong>
+                                        {{ skill.short }}
+                                    </strong>
+
+                                    <span>
+                                        +{{ skill.xp }}
+                                    </span>
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                    {% else %}
+
+                        <div class="muted glossary-no-history">
+                            No skill XP earned yet.
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <form
+                    method="post"
+                    action="{{ url_for(
+                        'toggle_glossary_quest',
+                        quest_id=item.quest.id
+                    ) }}"
+                    class="glossary-action"
+                >
+
+                    <button
+                        type="submit"
+                        class="
+                            glossary-toggle
+                            {% if item.active %}
+                                deactivate
+                            {% else %}
+                                activate
+                            {% endif %}
+                        "
+                    >
+
+                        {% if item.active %}
+                            Deactivate
+                        {% else %}
+                            Activate
+                        {% endif %}
+
+                    </button>
+
+                </form>
+
+            </article>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

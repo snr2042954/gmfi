@@ -3,5 +3,6 @@
 data/
 data_*/
 __pycache__/
+app/__pycache__/
 *.pyc
 docker-compose.yml

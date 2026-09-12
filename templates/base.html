@@ -17,21 +17,32 @@
         {% endblock %}
     </title>
 
+
     <link
         rel="icon"
         type="image/png"
-        href="{{ url_for('static', filename='gmfi-logo.png') }}"
+        href="{{ url_for(
+            'static',
+            filename='gmfi-logo.png'
+        ) }}"
     >
+
 
     <link
         rel="apple-touch-icon"
-        sizes="180x180"
-        href="{{ url_for('static', filename='gmfi-touch-icon.png') }}"
+        href="{{ url_for(
+            'static',
+            filename='gmfi-touch-icon.png'
+        ) }}"
     >
+
 
     <link
         rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
+        href="{{ url_for(
+            'static',
+            filename='style.css'
+        ) }}"
     >
 
 </head>
@@ -50,12 +61,18 @@
                 class="brand"
                 aria-label="gmfi home"
             >
+
                 <img
-                    src="{{ url_for('static', filename='gmfi-logo.png') }}"
+                    src="{{ url_for(
+                        'static',
+                        filename='gmfi-logo.png'
+                    ) }}"
                     alt="gmfi"
                     class="brand-logo"
                 >
+
             </a>
+
 
             <div class="muted">
                 {{ today }}
@@ -73,12 +90,14 @@
                 Today
             </a>
 
+
             <a
                 href="{{ url_for('character_page') }}"
                 class="{% if active_page == 'character' %}active{% endif %}"
             >
                 Character
             </a>
+
 
             <a
                 href="{{ url_for('week_page') }}"
@@ -87,11 +106,20 @@
                 Week
             </a>
 
+
             <a
                 href="{{ url_for('trophies_page') }}"
                 class="{% if active_page == 'trophies' %}active{% endif %}"
             >
                 Trophies
+            </a>
+
+
+            <a
+                href="{{ url_for('glossary_page') }}"
+                class="{% if active_page == 'glossary' %}active{% endif %}"
+            >
+                Task Glossary
             </a>
 
         </nav>

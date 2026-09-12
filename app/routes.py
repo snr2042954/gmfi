@@ -24,6 +24,7 @@ from app.quests import (
     get_active_quests,
     get_quest_by_id,
     load_quests,
+    quest_is_active,
 )
 from app.timeutils import (
     now_local,
@@ -592,9 +593,8 @@ def register_routes(app):
 
         # Prevent inactive quests from being
         # manually logged via crafted requests.
-        if not quest.get(
-            "active",
-            True,
+        if not quest_is_active(
+            quest
         ):
             return (
                 "Quest is inactive",

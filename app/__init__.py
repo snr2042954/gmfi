@@ -1,6 +1,9 @@
 from flask import Flask
 
 from app.db import init_db
+from app.glossary_routes import (
+    register_glossary_routes,
+)
 from app.routes import register_routes
 
 
@@ -12,6 +15,8 @@ def create_app():
     )
 
     init_db()
+
     register_routes(app)
+    register_glossary_routes(app)
 
     return app
