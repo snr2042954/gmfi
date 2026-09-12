@@ -98,6 +98,86 @@ def get_today_context():
         today_logs,
     )
 
+def get_week_xp_history(
+    selected_year,
+    selected_week,
+    weeks=10,
+):
+    selected_monday = date.fromisocalendar(
+        selected_year,
+        selected_week,
+        1,
+    )
+
+    history = []
+
+    for offset in range(
+        weeks - 1,
+        -1,
+        -1,
+    ):
+        monday = (
+            selected_monday
+            - timedelta(
+                weeks=offset
+            )
+        )
+
+        sunday = (
+            monday
+            + timedelta(days=6)
+        )
+
+        iso = monday.isocalendar()
+
+        with get_db() as db:
+            row = db.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(xp_earned),
+                        0
+                    ) AS total_xp
+                FROM quest_logs
+                WHERE completed_date
+                BETWEEN ? AND ?
+                """,
+                (
+                    monday.isoformat(),
+                    sunday.isoformat(),
+                ),
+            ).fetchone()
+
+        history.append(
+            {
+                "year": iso.year,
+                "week": iso.week,
+                "xp": row["total_xp"],
+                "start": monday,
+                "end": sunday,
+            }
+        )
+
+    max_xp = max(
+        (
+            item["xp"]
+            for item in history
+        ),
+        default=0,
+    )
+
+    for item in history:
+        if max_xp:
+            item["height"] = (
+                item["xp"]
+                / max_xp
+                * 100
+            )
+        else:
+            item["height"] = 0
+
+    return history
+
 
 def register_routes(app):
 
@@ -428,6 +508,11 @@ def register_routes(app):
             current_iso.year + 2,
         )
 
+        week_xp_history = get_week_xp_history(
+            selected_year,
+            selected_week,
+        )
+
         return render_template(
             "week.html",
 
@@ -438,18 +523,19 @@ def register_routes(app):
             selected_week=selected_week,
 
             available_years=available_years,
-
             available_weeks=range(
                 1,
                 max_weeks + 1,
             ),
 
-            week_start_label=week_start_label,
-            week_end_label=week_end_label,
-
             week_dates=week_dates,
             week_rows=week_rows,
             week_xp=week_xp,
+
+            week_start_label=week_start_label,
+            week_end_label=week_end_label,
+
+            week_xp_history=week_xp_history,
         )
 
 

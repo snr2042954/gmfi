@@ -90,6 +90,73 @@ Week · gmfi
     </form>
 
 
+
+    <div class="week-xp-chart">
+
+        <div class="week-xp-chart-header">
+
+            <div>
+
+                <div class="eyebrow">
+                    XP HISTORY
+                </div>
+
+                <div class="muted">
+                    Last 10 weeks
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="week-xp-bars">
+
+            {% for item in week_xp_history %}
+
+                <div
+                    class="
+                        week-xp-column
+                        {% if
+                            item.year == selected_year
+                            and item.week == selected_week
+                        %}
+                            selected
+                        {% endif %}
+                    "
+                    title="
+                        Week {{ item.week }} ·
+                        {{ item.xp }} XP ·
+                        {{ item.start.strftime('%b') }} {{ item.start.day }}
+                        –
+                        {{ item.end.strftime('%b') }} {{ item.end.day }}
+                    "
+                >
+
+                    <div class="week-xp-bar-area">
+
+                        <div
+                            class="week-xp-bar"
+                            style="height: {{ item.height }}%;"
+                        ></div>
+
+                    </div>
+
+
+                    <span class="week-xp-label">
+                        {{ item.week }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+
     <div class="week-wrapper">
 
         <table class="week-table">
