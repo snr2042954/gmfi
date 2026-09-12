@@ -90,6 +90,9 @@ Task Glossary · gmfi
             class="task-create-form"
         >
 
+            <!-- ========================= -->
+            <!-- BASIC INFO -->
+            <!-- ========================= -->
 
             <div class="task-form-grid">
 
@@ -99,7 +102,7 @@ Task Glossary · gmfi
                     <input
                         type="text"
                         name="name"
-                        placeholder="Skating"
+                        placeholder="Swimming"
                         required
                     >
                 </label>
@@ -110,6 +113,8 @@ Task Glossary · gmfi
 
                     <select
                         name="category"
+                        id="taskCategory"
+                        onchange="updateWorkoutTypeForm()"
                         required
                     >
                         <option value="daily">
@@ -135,11 +140,49 @@ Task Glossary · gmfi
                 <input
                     type="text"
                     name="description"
-                    placeholder="Complete a skating session"
+                    placeholder="Complete a swimming session"
                     required
                 >
             </label>
 
+
+            <!-- ========================= -->
+            <!-- WORKOUT TYPE -->
+            <!-- ========================= -->
+
+            <div
+                class="task-form-subsection"
+                id="workoutTypeFields"
+            >
+
+                <div class="task-form-heading">
+                    Workout type
+                </div>
+
+
+                <label>
+                    Type
+
+                    <select
+                        name="workout_type"
+                        id="workoutType"
+                    >
+                        <option value="strength">
+                            Strength
+                        </option>
+
+                        <option value="cardio">
+                            Cardio
+                        </option>
+                    </select>
+                </label>
+
+            </div>
+
+
+            <!-- ========================= -->
+            <!-- XP + MEASUREMENT -->
+            <!-- ========================= -->
 
             <div class="task-form-grid">
 
@@ -178,7 +221,9 @@ Task Glossary · gmfi
             </div>
 
 
+            <!-- ========================= -->
             <!-- MEASUREMENT -->
+            <!-- ========================= -->
 
             <div
                 class="task-form-subsection"
@@ -306,7 +351,9 @@ Task Glossary · gmfi
             </div>
 
 
+            <!-- ========================= -->
             <!-- SKILLS -->
+            <!-- ========================= -->
 
             <div class="task-form-subsection">
 
@@ -323,6 +370,7 @@ Task Glossary · gmfi
                 <div class="task-skill-table">
 
                     <div class="task-skill-header">
+
                         <span>
                             Skill
                         </span>
@@ -334,6 +382,7 @@ Task Glossary · gmfi
                         <span>
                             Per unit
                         </span>
+
                     </div>
 
 
@@ -381,6 +430,10 @@ Task Glossary · gmfi
             </div>
 
 
+            <!-- ========================= -->
+            <!-- ACTIONS -->
+            <!-- ========================= -->
+
             <div class="task-create-actions">
 
                 <button
@@ -423,6 +476,8 @@ Task Glossary · gmfi
                 "
             >
 
+                <!-- HEADER -->
+
                 <div class="glossary-card-header">
 
                     <div>
@@ -460,6 +515,8 @@ Task Glossary · gmfi
                 </div>
 
 
+                <!-- CREATED BY -->
+
                 {% if item.quest.created_by %}
 
                     <div class="glossary-created-by">
@@ -469,12 +526,25 @@ Task Glossary · gmfi
                 {% endif %}
 
 
+                <!-- DESCRIPTION -->
+
                 <p class="glossary-description">
                     {{ item.quest.description }}
                 </p>
 
 
+                <!-- CONFIG -->
+
                 <div class="glossary-config">
+
+                    {% if item.quest.workout_type %}
+
+                        <span>
+                            {{ item.quest.workout_type|title }}
+                        </span>
+
+                    {% endif %}
+
 
                     {% if item.quest.measurement %}
 
@@ -518,6 +588,8 @@ Task Glossary · gmfi
                 </div>
 
 
+                <!-- HISTORY -->
+
                 <div class="glossary-history">
 
                     <div>
@@ -547,6 +619,8 @@ Task Glossary · gmfi
 
                 </div>
 
+
+                <!-- SKILL CONTRIBUTIONS -->
 
                 <div class="glossary-skill-section">
 
@@ -591,6 +665,8 @@ Task Glossary · gmfi
 
                 </div>
 
+
+                <!-- ACTIVE / INACTIVE -->
 
                 <form
                     method="post"
@@ -643,17 +719,22 @@ function toggleTaskCreator(forceState = null) {
     let open;
 
     if (forceState === null) {
+
         open = !creator.classList.contains(
             "open"
         );
+
     } else {
+
         open = forceState;
+
     }
 
     creator.classList.toggle(
         "open",
         open
     );
+
 
     if (open) {
 
@@ -664,7 +745,45 @@ function toggleTaskCreator(forceState = null) {
         if (input) {
             input.focus();
         }
+
     }
+
+}
+
+
+function updateWorkoutTypeForm() {
+
+    const category =
+        document.getElementById(
+            "taskCategory"
+        ).value;
+
+
+    const fields =
+        document.getElementById(
+            "workoutTypeFields"
+        );
+
+
+    const select =
+        document.getElementById(
+            "workoutType"
+        );
+
+
+    const isWorkout =
+        category === "workout";
+
+
+    fields.classList.toggle(
+        "visible",
+        isWorkout
+    );
+
+
+    select.disabled =
+        !isWorkout;
+
 }
 
 
@@ -675,23 +794,30 @@ function updateMeasurementForm() {
             "measurableSelect"
         ).value === "yes";
 
+
     const measurementFields =
         document.getElementById(
             "measurementFields"
         );
+
 
     measurementFields.classList.toggle(
         "visible",
         measurable
     );
 
+
     document
         .querySelectorAll(
             ".per-unit-input"
         )
         .forEach((input) => {
-            input.disabled = !measurable;
+
+            input.disabled =
+                !measurable;
+
         });
+
 
     if (!measurable) {
 
@@ -700,7 +826,9 @@ function updateMeasurementForm() {
         ).checked = false;
 
         updateScalingForm();
+
     }
+
 }
 
 
@@ -711,8 +839,10 @@ function updateScalingForm() {
             "scalingCheckbox"
         );
 
+
     const enabled =
         checkbox.checked;
+
 
     document.getElementById(
         "scalingEnabled"
@@ -720,12 +850,14 @@ function updateScalingForm() {
         ? "yes"
         : "no";
 
+
     document.getElementById(
         "scalingFields"
     ).classList.toggle(
         "visible",
         enabled
     );
+
 }
 
 
@@ -733,12 +865,19 @@ document.addEventListener(
     "DOMContentLoaded",
     () => {
 
+        updateWorkoutTypeForm();
+
         updateMeasurementForm();
+
         updateScalingForm();
 
+
         {% if create_error %}
+
             toggleTaskCreator(true);
+
         {% endif %}
+
     }
 );
 

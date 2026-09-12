@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -22,7 +23,7 @@ def load_achievements():
         "r",
         encoding="utf-8",
     ) as file:
-        data = yaml.safe_load(file)
+        data = yaml.safe_load(file) or {}
 
     return data.get(
         "achievements",
@@ -119,6 +120,67 @@ def build_logs_by_date(logs):
     return result
 
 
+def build_quest_groups():
+    quests = load_quests()
+
+    category_ids = defaultdict(set)
+
+    workout_type_ids = defaultdict(set)
+
+    for quest in quests:
+
+        quest_id = quest["id"]
+
+        category = quest.get(
+            "category"
+        )
+
+        if category:
+            category_ids[
+                category
+            ].add(
+                quest_id
+            )
+
+        if category == "workout":
+
+            workout_type = quest.get(
+                "workout_type"
+            )
+
+            if workout_type:
+                workout_type_ids[
+                    workout_type
+                ].add(
+                    quest_id
+                )
+
+    return (
+        category_ids,
+        workout_type_ids,
+    )
+
+
+def count_days_with_any(
+    week_dates,
+    logs_by_date,
+    quest_ids,
+):
+    completed_days = 0
+
+    for day in week_dates:
+
+        completed = logs_by_date.get(
+            day.isoformat(),
+            set(),
+        )
+
+        if completed & quest_ids:
+            completed_days += 1
+
+    return completed_days
+
+
 def achievement_completed(
     achievement,
     iso_year,
@@ -138,13 +200,15 @@ def achievement_completed(
         {},
     )
 
-    quests = load_quests()
+    (
+        category_ids,
+        workout_type_ids,
+    ) = build_quest_groups()
 
-    workout_ids = {
-        quest["id"]
-        for quest in quests
-        if quest["category"] == "workout"
-    }
+    workout_ids = category_ids.get(
+        "workout",
+        set(),
+    )
 
     # =========================
     # REQUIRED QUESTS EVERY DAY
@@ -162,6 +226,7 @@ def achievement_completed(
         )
 
         for day in week_dates:
+
             completed = logs_by_date.get(
                 day.isoformat(),
                 set(),
@@ -174,6 +239,9 @@ def achievement_completed(
 
     # =========================
     # MINIMUM WORKOUT DAYS
+    # Legacy condition.
+    # Equivalent to category:
+    # workout.
     # =========================
 
     minimum_workout_days = (
@@ -183,21 +251,94 @@ def achievement_completed(
     )
 
     if minimum_workout_days is not None:
-        workout_days = 0
 
-        for day in week_dates:
-            completed = logs_by_date.get(
-                day.isoformat(),
-                set(),
-            )
-
-            if completed & workout_ids:
-                workout_days += 1
+        workout_days = count_days_with_any(
+            week_dates,
+            logs_by_date,
+            workout_ids,
+        )
 
         if (
             workout_days
             < minimum_workout_days
         ):
+            return False
+
+    # =========================
+    # MINIMUM CATEGORY DAYS
+    #
+    # Example:
+    #
+    # minimum_category_days:
+    #   daily: 7
+    #   nutrition: 7
+    #   workout: 4
+    # =========================
+
+    minimum_category_days = (
+        requirements.get(
+            "minimum_category_days",
+            {},
+        )
+    )
+
+    for (
+        category,
+        required_days,
+    ) in minimum_category_days.items():
+
+        quest_ids = category_ids.get(
+            category,
+            set(),
+        )
+
+        completed_days = (
+            count_days_with_any(
+                week_dates,
+                logs_by_date,
+                quest_ids,
+            )
+        )
+
+        if completed_days < required_days:
+            return False
+
+    # =========================
+    # MINIMUM WORKOUT TYPE DAYS
+    #
+    # Example:
+    #
+    # minimum_workout_type_days:
+    #   strength: 3
+    #   cardio: 2
+    # =========================
+
+    minimum_workout_type_days = (
+        requirements.get(
+            "minimum_workout_type_days",
+            {},
+        )
+    )
+
+    for (
+        workout_type,
+        required_days,
+    ) in minimum_workout_type_days.items():
+
+        quest_ids = workout_type_ids.get(
+            workout_type,
+            set(),
+        )
+
+        completed_days = (
+            count_days_with_any(
+                week_dates,
+                logs_by_date,
+                quest_ids,
+            )
+        )
+
+        if completed_days < required_days:
             return False
 
     # =========================
@@ -240,6 +381,7 @@ def achievement_completed(
     )
 
     if any_quest_requirement:
+
         quest_ids = set(
             any_quest_requirement.get(
                 "quest_ids",
@@ -254,16 +396,13 @@ def achievement_completed(
             )
         )
 
-        completed_days = 0
-
-        for day in week_dates:
-            completed = logs_by_date.get(
-                day.isoformat(),
-                set(),
+        completed_days = (
+            count_days_with_any(
+                week_dates,
+                logs_by_date,
+                quest_ids,
             )
-
-            if completed & quest_ids:
-                completed_days += 1
+        )
 
         if completed_days < required_days:
             return False
@@ -291,6 +430,7 @@ def evaluate_weekly_achievements(
         )
 
         with get_db() as db:
+
             existing = db.execute(
                 """
                 SELECT id

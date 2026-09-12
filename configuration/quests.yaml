@@ -169,6 +169,7 @@ quests:
   - id: jogging
     name: Jogging
     category: workout
+    workout_type: cardio
     description: Complete a run
     active: true
 
@@ -201,6 +202,7 @@ quests:
   - id: gym_push
     name: Push
     category: workout
+    workout_type: strength
     description: Complete a push workout
     active: false
 
@@ -234,6 +236,7 @@ quests:
   - id: gym_pull
     name: Pull
     category: workout
+    workout_type: strength
     description: Complete a pull workout
     active: false
 
@@ -267,6 +270,7 @@ quests:
   - id: gym_legs
     name: Legs
     category: workout
+    workout_type: strength
     description: Complete a leg workout
     active: false
 
@@ -303,6 +307,7 @@ quests:
   - id: cycling
     name: Cycling
     category: workout
+    workout_type: cardio
     description: Complete a cycling session
     active: false
 

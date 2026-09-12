@@ -2403,3 +2403,12 @@ h2 {
     }
 
 }
+
+#workoutTypeFields {
+    display: none;
+}
+
+
+#workoutTypeFields.visible {
+    display: block;
+}

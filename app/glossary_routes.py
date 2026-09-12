@@ -35,6 +35,11 @@ ALLOWED_CATEGORIES = {
     "workout",
 }
 
+ALLOWED_WORKOUT_TYPES = {
+    "strength",
+    "cardio",
+}
+
 
 def parse_float(
     value,
@@ -420,6 +425,27 @@ def register_glossary_routes(app):
                     ),
                 },
             }
+            
+            if category == "workout":
+
+                workout_type = (
+                    request.form.get(
+                        "workout_type",
+                        "",
+                    ).strip()
+                )
+
+                if (
+                    workout_type
+                    not in ALLOWED_WORKOUT_TYPES
+                ):
+                    raise ValueError(
+                        "Workout type must be Strength or Cardio."
+                    )
+
+                quest["workout_type"] = (
+                    workout_type
+                )
 
             if measurable:
 
