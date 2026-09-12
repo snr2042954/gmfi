@@ -330,6 +330,23 @@ def register_routes(app):
         # Only active quests are shown.
         quests = get_active_quests()
 
+        category_order = {
+            "daily": 0,
+            "nutrition": 1,
+            "workout": 2,
+        }
+
+        quests.sort(
+            key=lambda quest: (
+                category_order.get(
+                    quest.get("category"),
+                    99,
+                ),
+                quest["name"].lower(),
+            )
+        )
+
+
         with get_db() as db:
             week_logs = db.execute(
                 """
