@@ -18,13 +18,13 @@ services:
       - .env
 
     environment:
-      GMFI_USER=${USER_1}
+      GMFI_USER: ${USER_1}
 
     volumes:
       - ./data_${USER_1}:/app/data
       - ./configuration:/app/configuration
 
-    gmfi-2:
+  gmfi-2:
     build:
       context: .
       dockerfile: Dockerfile
@@ -40,7 +40,7 @@ services:
       - .env
 
     environment:
-      GMFI_USER=${USER_2}
+      GMFI_USER: ${USER_2}
 
     volumes:
       - ./data_${USER_2}:/app/data
