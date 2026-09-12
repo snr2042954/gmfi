@@ -9,7 +9,7 @@ Task Glossary · gmfi
 
 <section>
 
-    <div class="section-title">
+    <div class="section-title glossary-title">
 
         <div>
 
@@ -23,13 +23,392 @@ Task Glossary · gmfi
 
             <div class="muted">
                 Manage the quests in your current routine.
-                Historical XP is preserved when a quest is inactive.
+                Historical XP remains when a quest is inactive.
             </div>
 
         </div>
 
+
+        <button
+            type="button"
+            class="glossary-add-button"
+            onclick="toggleTaskCreator()"
+        >
+            + Add task
+        </button>
+
     </div>
 
+
+    {% if create_error %}
+
+        <div class="task-create-error">
+            {{ create_error }}
+        </div>
+
+    {% endif %}
+
+
+    <!-- ========================= -->
+    <!-- CREATE TASK -->
+    <!-- ========================= -->
+
+    <div
+        class="task-creator"
+        id="taskCreator"
+    >
+
+        <div class="task-creator-header">
+
+            <div>
+
+                <div class="eyebrow">
+                    NEW QUEST
+                </div>
+
+                <h2>
+                    Add task
+                </h2>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="task-creator-close"
+                onclick="toggleTaskCreator(false)"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form
+            method="post"
+            action="{{ url_for('create_glossary_quest') }}"
+            class="task-create-form"
+        >
+
+
+            <div class="task-form-grid">
+
+                <label>
+                    Name
+
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Skating"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Category
+
+                    <select
+                        name="category"
+                        required
+                    >
+                        <option value="daily">
+                            Daily
+                        </option>
+
+                        <option value="nutrition">
+                            Nutrition
+                        </option>
+
+                        <option value="workout">
+                            Workout
+                        </option>
+                    </select>
+                </label>
+
+            </div>
+
+
+            <label>
+                Description
+
+                <input
+                    type="text"
+                    name="description"
+                    placeholder="Complete a skating session"
+                    required
+                >
+            </label>
+
+
+            <div class="task-form-grid">
+
+                <label>
+                    Base XP
+
+                    <input
+                        type="number"
+                        name="base_xp"
+                        min="0"
+                        step="1"
+                        value="5"
+                        required
+                    >
+                </label>
+
+
+                <label>
+                    Measurement
+
+                    <select
+                        name="measurable"
+                        id="measurableSelect"
+                        onchange="updateMeasurementForm()"
+                    >
+                        <option value="no">
+                            None
+                        </option>
+
+                        <option value="yes">
+                            Measured task
+                        </option>
+                    </select>
+                </label>
+
+            </div>
+
+
+            <!-- MEASUREMENT -->
+
+            <div
+                class="task-form-subsection"
+                id="measurementFields"
+            >
+
+                <div class="task-form-heading">
+                    Measurement
+                </div>
+
+
+                <div class="task-form-grid">
+
+                    <label>
+                        Type
+
+                        <input
+                            type="text"
+                            name="measurement_type"
+                            placeholder="distance"
+                        >
+                    </label>
+
+
+                    <label>
+                        Label
+
+                        <input
+                            type="text"
+                            name="measurement_label"
+                            placeholder="Distance"
+                        >
+                    </label>
+
+
+                    <label>
+                        Unit
+
+                        <input
+                            type="text"
+                            name="measurement_unit"
+                            placeholder="km"
+                        >
+                    </label>
+
+
+                    <label>
+                        Minimum
+
+                        <input
+                            type="number"
+                            name="measurement_min"
+                            min="0"
+                            step="any"
+                            value="1"
+                        >
+                    </label>
+
+
+                    <label>
+                        Step
+
+                        <input
+                            type="number"
+                            name="measurement_step"
+                            min="0.000001"
+                            step="any"
+                            value="1"
+                        >
+                    </label>
+
+                </div>
+
+
+                <label class="task-checkbox-row">
+
+                    <input
+                        type="checkbox"
+                        id="scalingCheckbox"
+                        onchange="updateScalingForm()"
+                    >
+
+                    <input
+                        type="hidden"
+                        name="scaling_enabled"
+                        id="scalingEnabled"
+                        value="no"
+                    >
+
+                    Scale global XP with measurement
+
+                </label>
+
+
+                <div
+                    class="task-form-grid"
+                    id="scalingFields"
+                >
+
+                    <label>
+                        XP per unit
+
+                        <input
+                            type="number"
+                            name="xp_per_unit"
+                            min="0"
+                            step="any"
+                        >
+                    </label>
+
+
+                    <label>
+                        Maximum rewarded units
+
+                        <input
+                            type="number"
+                            name="max_units"
+                            min="0"
+                            step="any"
+                        >
+                    </label>
+
+                </div>
+
+            </div>
+
+
+            <!-- SKILLS -->
+
+            <div class="task-form-subsection">
+
+                <div class="task-form-heading">
+                    Skill rewards
+                </div>
+
+                <div class="muted task-form-help">
+                    Leave a skill at zero if this task should
+                    not contribute to it.
+                </div>
+
+
+                <div class="task-skill-table">
+
+                    <div class="task-skill-header">
+                        <span>
+                            Skill
+                        </span>
+
+                        <span>
+                            Base XP
+                        </span>
+
+                        <span>
+                            Per unit
+                        </span>
+                    </div>
+
+
+                    {% for skill_id, skill in skill_definitions.items() %}
+
+                        <div class="task-skill-row">
+
+                            <div>
+
+                                <strong>
+                                    {{ skill.short }}
+                                </strong>
+
+                                <span>
+                                    {{ skill.name }}
+                                </span>
+
+                            </div>
+
+
+                            <input
+                                type="number"
+                                name="skill_{{ skill_id }}_base"
+                                min="0"
+                                step="any"
+                                placeholder="0"
+                            >
+
+
+                            <input
+                                type="number"
+                                name="skill_{{ skill_id }}_per_unit"
+                                min="0"
+                                step="any"
+                                placeholder="0"
+                                class="per-unit-input"
+                            >
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+
+            <div class="task-create-actions">
+
+                <button
+                    type="submit"
+                    class="complete-button"
+                >
+                    Create task
+                </button>
+
+
+                <button
+                    type="button"
+                    class="quest-collapse-button"
+                    onclick="toggleTaskCreator(false)"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- GLOSSARY -->
+    <!-- ========================= -->
 
     <div class="glossary-grid">
 
@@ -81,6 +460,15 @@ Task Glossary · gmfi
                 </div>
 
 
+                {% if item.quest.created_by %}
+
+                    <div class="glossary-created-by">
+                        Created by {{ item.quest.created_by }}
+                    </div>
+
+                {% endif %}
+
+
                 <p class="glossary-description">
                     {{ item.quest.description }}
                 </p>
@@ -115,7 +503,6 @@ Task Glossary · gmfi
                         <span>
 
                             +{{ item.quest.xp.scaling.per_unit }}
-
                             XP /
 
                             {% if item.quest.measurement %}
@@ -243,5 +630,118 @@ Task Glossary · gmfi
     </div>
 
 </section>
+
+
+<script>
+
+function toggleTaskCreator(forceState = null) {
+
+    const creator = document.getElementById(
+        "taskCreator"
+    );
+
+    let open;
+
+    if (forceState === null) {
+        open = !creator.classList.contains(
+            "open"
+        );
+    } else {
+        open = forceState;
+    }
+
+    creator.classList.toggle(
+        "open",
+        open
+    );
+
+    if (open) {
+
+        const input = creator.querySelector(
+            'input[name="name"]'
+        );
+
+        if (input) {
+            input.focus();
+        }
+    }
+}
+
+
+function updateMeasurementForm() {
+
+    const measurable =
+        document.getElementById(
+            "measurableSelect"
+        ).value === "yes";
+
+    const measurementFields =
+        document.getElementById(
+            "measurementFields"
+        );
+
+    measurementFields.classList.toggle(
+        "visible",
+        measurable
+    );
+
+    document
+        .querySelectorAll(
+            ".per-unit-input"
+        )
+        .forEach((input) => {
+            input.disabled = !measurable;
+        });
+
+    if (!measurable) {
+
+        document.getElementById(
+            "scalingCheckbox"
+        ).checked = false;
+
+        updateScalingForm();
+    }
+}
+
+
+function updateScalingForm() {
+
+    const checkbox =
+        document.getElementById(
+            "scalingCheckbox"
+        );
+
+    const enabled =
+        checkbox.checked;
+
+    document.getElementById(
+        "scalingEnabled"
+    ).value = enabled
+        ? "yes"
+        : "no";
+
+    document.getElementById(
+        "scalingFields"
+    ).classList.toggle(
+        "visible",
+        enabled
+    );
+}
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        updateMeasurementForm();
+        updateScalingForm();
+
+        {% if create_error %}
+            toggleTaskCreator(true);
+        {% endif %}
+    }
+);
+
+</script>
 
 {% endblock %}

@@ -1938,3 +1938,339 @@ h2 {
     }
 
 }
+
+/* ========================= */
+/* TASK CREATOR */
+/* ========================= */
+
+.glossary-title {
+    align-items: flex-end;
+}
+
+
+.glossary-add-button {
+    padding: 9px 14px;
+
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+
+    background: var(--accent-dark);
+
+    color: var(--accent);
+
+    cursor: pointer;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+.glossary-add-button:hover {
+    background: var(--accent);
+    color: var(--background);
+}
+
+
+.task-create-error {
+    margin-bottom: 16px;
+
+    padding: 10px 12px;
+
+    border: 1px solid #743737;
+    border-radius: 8px;
+
+    background: #2b1616;
+
+    color: #ff9d9d;
+
+    font-size: 12px;
+}
+
+
+.task-creator {
+    display: none;
+
+    margin-bottom: 24px;
+
+    padding: 20px;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--panel);
+}
+
+
+.task-creator.open {
+    display: block;
+}
+
+
+.task-creator-header {
+    display: flex;
+
+    align-items: flex-start;
+    justify-content: space-between;
+
+    margin-bottom: 20px;
+}
+
+
+.task-creator-header h2 {
+    margin: 3px 0 0;
+}
+
+
+.task-creator-close {
+    width: 30px;
+    height: 30px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: transparent;
+
+    color: var(--muted);
+
+    cursor: pointer;
+
+    font-size: 18px;
+}
+
+
+.task-creator-close:hover {
+    color: var(--text);
+}
+
+
+.task-create-form {
+    display: flex;
+    flex-direction: column;
+
+    gap: 16px;
+}
+
+
+.task-create-form label {
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+
+    color: var(--muted);
+
+    font-size: 10px;
+    font-weight: 600;
+
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+}
+
+
+.task-create-form input,
+.task-create-form select {
+    width: 100%;
+
+    padding: 9px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: var(--input);
+
+    color: var(--text);
+
+    font: inherit;
+}
+
+
+.task-create-form input:focus,
+.task-create-form select:focus {
+    outline: none;
+
+    border-color: var(--accent);
+}
+
+
+.task-form-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+
+.task-form-subsection {
+    padding: 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 9px;
+
+    background: var(--input);
+}
+
+
+#measurementFields {
+    display: none;
+}
+
+
+#measurementFields.visible {
+    display: block;
+}
+
+
+#scalingFields {
+    display: none;
+
+    margin-top: 12px;
+}
+
+
+#scalingFields.visible {
+    display: grid;
+}
+
+
+.task-form-heading {
+    margin-bottom: 12px;
+
+    color: var(--text);
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+
+.task-form-help {
+    margin-top: -6px;
+    margin-bottom: 12px;
+
+    font-size: 11px;
+}
+
+
+.task-checkbox-row {
+    flex-direction: row !important;
+
+    align-items: center;
+
+    gap: 8px !important;
+
+    margin-top: 14px;
+
+    cursor: pointer;
+}
+
+
+.task-checkbox-row input[type="checkbox"] {
+    width: auto;
+
+    accent-color: var(--accent);
+}
+
+
+.task-skill-table {
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.task-skill-header,
+.task-skill-row {
+    display: grid;
+
+    grid-template-columns:
+        1fr 110px 110px;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.task-skill-header {
+    padding: 0 8px 4px;
+
+    color: var(--muted);
+
+    font-size: 9px;
+
+    text-transform: uppercase;
+}
+
+
+.task-skill-row {
+    padding: 8px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: var(--panel);
+}
+
+
+.task-skill-row > div {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.task-skill-row > div span {
+    color: var(--muted);
+
+    font-size: 10px;
+}
+
+
+.task-create-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.task-create-actions .complete-button {
+    width: auto;
+
+    margin: 0;
+}
+
+
+.glossary-created-by {
+    margin-top: -10px;
+
+    color: var(--accent);
+
+    font-size: 10px;
+}
+
+
+@media (max-width: 700px) {
+
+    .glossary-title {
+        align-items: flex-start;
+    }
+
+
+    .task-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .task-skill-header,
+    .task-skill-row {
+        grid-template-columns:
+            1fr 80px 80px;
+    }
+
+}
